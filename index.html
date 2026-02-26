@@ -1,128 +1,118 @@
 <!DOCTYPE html>
-<html lang="it">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Utility - Data Processor</title>
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { font-family: 'Courier New', Courier, monospace; }
-        #preview-container { background: #f0f0f0; border: 1px solid #ddd; position: relative; width: 100%; height: 450px; overflow: hidden; }
-        .draggable { position: absolute; cursor: move; touch-action: none; font-size: 12px; color: #333; }
-        #signature-pad { border: 1px solid #ddd; width: 100%; height: 120px; filter: grayscale(1); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System_Utility_v2</title>
+
+<script src=""></script>
+<script src=""></script>
+<script src=""></script>
+
+<style>
+body{background:#000;color:#0f0;font-family:monospace;padding:20px;}
+.box{display:flex;flex-direction:column;gap:10px;border:1px solid #333;padding:15px;background:#111;max-width:450px;}
+input,button{display:block;width:100%;padding:10px;background:#000;color:#0f0;border:1px solid #0f0;margin:5px 0;}
+#sig{background:#fff;height:150px;border:2px solid #0f0;width:100%;}
+#pw{position:relative;margin-top:20px;display:inline-block;border:1px solid #444;background:#fff;}
+.dg{position:absolute;cursor:move;color:#000;background:rgba(255,255,255,0.7);padding:4px;border:1px dashed #000;z-index:99;touch-action:none;}
+</style>
 </head>
-<body class="bg-gray-200 p-4">
 
-    <div class="max-w-4xl mx-auto bg-gray-100 border border-gray-400 p-6 shadow-sm">
-        <h1 class="text-xs text-gray-500 mb-4 uppercase tracking-widest">System_Log_Processor_v1.0.4</h1>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="space-y-4 border-r border-gray-300 pr-4">
-                <div>
-                    <label class="text-[10px] text-gray-600 block">SOURCE_FILE.bin</label>
-                    <input type="file" id="pdfInput" accept=".pdf" class="w-full text-[10px] bg-white border p-1">
-                </div>
-                
-                <input type="text" id="nameInput" placeholder="STRING_ID" class="w-full text-[10px] border p-2" oninput="updatePreviewText()">
-                
-                <div>
-                    <label class="text-[10px] text-gray-600 block">INPUT_BUFFER</label>
-                    <canvas id="signature-pad"></canvas>
-                    <div class="flex gap-2 mt-1">
-                        <button onclick="clearPad()" class="text-[9px] border px-2 py-1">RESET</button>
-                        <button onclick="applySignature()" class="text-[9px] border bg-gray-300 px-2 py-1">VALIDATE</button>
-                    </div>
-                </div>
+<body>
+<div class="box">
 
-                <button onclick="generatePDF()" class="w-full bg-gray-600 text-white text-[10px] py-2 hover:bg-black transition">
-                    EXECUTE_EXPORT
-                </button>
-            </div>
+<p style="font-size:10px;opacity:0.5;margin:0;">SYS_MOD: DATA_INJECT_V2</p>
+<input type="file" id="fIn" accept=".pdf">
+<input type="text" id="tIn" placeholder="METADATA_STRING">
+<label>AUTH_PAD (SIGN BELOW):</label>
+<canvas id="sig"></canvas>
+<button onclick="apply()">VALIDATE_BUFFER</button>
+<button onclick="save()" style="background:#050;">EXECUTE_DEPLOY</button>
+</div>
 
-            <div class="md:col-span-2">
-                <div id="preview-container">
-                    <div id="pdf-page-mock" class="bg-white mx-auto relative shadow-inner" style="width: 300px; height: 420px; top: 15px;">
-                        <div id="drag-name" class="draggable" style="top: 20px; left: 20px;">ID_STR: ...</div>
-                        <div id="drag-date" class="draggable" style="top: 40px; left: 20px;">TS_LOG: 2026-02-26</div>
-                        <div id="drag-sign" class="draggable" style="top: 80px; left: 20px; display: none;">
-                            <img id="sign-img-preview" src="" style="width: 80px; opacity: 0.8;">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div id="pw">
+<canvas id="pC"></canvas>
 
-    <script>
-        // Logica JavaScript invariata ma con ID/Testi rinominati per coerenza
-        const signaturePad = new SignaturePad(document.getElementById('signature-pad'), { penColor: 'black' });
-        let signatureImgBase64 = null;
-        document.getElementById('drag-date').innerText = "TS_LOG: " + new Date().toISOString().split('T')[0];
+<div id="dN" class="dg" style="top:10px;left:10px">ID: ...</div>
+<div id="dS" class="dg" style="top:50px;left:10px;display:none">
+<img id="sI" width="120">
+</div>
+</div>
 
-        function updatePreviewText() {
-            document.getElementById('drag-name').innerText = "ID_STR: " + document.getElementById('nameInput').value;
-        }
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='';
+const pad=new SignaturePad(document.getElementById('sig'));
+let sB64=null;
 
-        function clearPad() { signaturePad.clear(); }
+document.getElementById('fIn').onchange=async(e)=>{
+const f=e.target.files[0];
+const r=new FileReader();
+r.onload=async function(){
+const pdf=await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+const pg=await pdf.getPage(1);
+const c=document.getElementById('pC');
+const v=pg.getViewport({scale:0.8});
+c.height=v.height;c.width=v.width;
+await pg.render({canvasContext:c.getContext('2d'),viewport:v}).promise;
+};
+r.readAsArrayBuffer(f);
+};
 
-        function applySignature() {
-            if (signaturePad.isEmpty()) return;
-            signatureImgBase64 = signaturePad.toDataURL();
-            document.getElementById('sign-img-preview').src = signatureImgBase64;
-            document.getElementById('drag-sign').style.display = 'block';
-        }
+document.getElementById('tIn').oninput=()=>{
+document.getElementById('dN').innerText="ID: "+document.getElementById('tIn').value;
+};
 
-        function makeDraggable(el) {
-            let posX = 0, posY = 0, mouseX = 0, mouseY = 0;
-            el.onmousedown = el.ontouchstart = dragMouseDown;
-            function dragMouseDown(e) {
-                const event = e.touches ? e.touches[0] : e;
-                mouseX = event.clientX; mouseY = event.clientY;
-                document.onmouseup = document.ontouchend = () => { document.onmousemove = document.ontouchmove = null; };
-                document.onmousemove = document.ontouchmove = (e) => {
-                    const ev = e.touches ? e.touches[0] : e;
-                    posX = mouseX - ev.clientX; posY = mouseY - ev.clientY;
-                    mouseX = ev.clientX; mouseY = ev.clientY;
-                    el.style.top = (el.offsetTop - posY) + "px";
-                    el.style.left = (el.offsetLeft - posX) + "px";
-                };
-            }
-        }
+function apply(){
+sB64=pad.toDataURL();
+document.getElementById('sI').src=sB64;
+document.getElementById('dS').style.display='block';
+}
 
-        makeDraggable(document.getElementById("drag-name"));
-        makeDraggable(document.getElementById("drag-date"));
-        makeDraggable(document.getElementById("drag-sign"));
+function drag(el){
+el.onmousedown=el.ontouchstart=(e)=>{
+const ev=e.touches?e.touches[0]:e;
+let ox=ev.clientX-el.offsetLeft, oy=ev.clientY-el.offsetTop;
+document.onmousemove=document.ontouchmove=(e)=>{
+const ev2=e.touches?e.touches[0]:e;
+el.style.left=(ev2.clientX-ox)+"px";
+el.style.top=(ev2.clientY-oy)+"px";
+};
+document.onmouseup=document.ontouchend=()=>{
+document.onmousemove=document.ontouchmove=null;
+};
+};
+}
+drag(document.getElementById('dN'));
+drag(document.getElementById('dS'));
 
-        async function generatePDF() {
-            const file = document.getElementById('pdfInput').files[0];
-            if (!file) return;
-            const pdfBytes = await file.arrayBuffer();
-            const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
-            const page = pdfDoc.getPages()[0];
-            const { width, height } = page.getSize();
-            const mock = document.getElementById('pdf-page-mock');
-            const scaleX = width / mock.offsetWidth;
-            const scaleY = height / mock.offsetHeight;
+async function save(){
+const f=document.getElementById('fIn').files[0];
+const doc=await PDFLib.PDFDocument.load(await f.arrayBuffer());
+const pg=doc.getPages()[0];
+const can=document.getElementById('pC');
+const rx=pg.getSize().width/can.width;
+const ry=pg.getSize().height/can.height;
 
-            page.drawText(document.getElementById('drag-name').innerText, { x: document.getElementById('drag-name').offsetLeft * scaleX, y: height - (document.getElementById('drag-name').offsetTop * scaleY) - 15, size: 10 });
-            page.drawText(document.getElementById('drag-date').innerText, { x: document.getElementById('drag-date').offsetLeft * scaleX, y: height - (document.getElementById('drag-date').offsetTop * scaleY) - 15, size: 10 });
+pg.drawText(document.getElementById('dN').innerText,{
+x:document.getElementById('dN').offsetLeftrx,
+y:pg.getSize().height-(document.getElementById('dN').offsetTopry)-20,
+size:12*ry
+});
 
-            if (signatureImgBase64) {
-                const signImg = await pdfDoc.embedPng(signatureImgBase64);
-                const signEl = document.getElementById('drag-sign');
-                page.drawImage(signImg, { x: signEl.offsetLeft * scaleX, y: height - (signEl.offsetTop * scaleY) - 40, width: 80 * scaleX, height: 35 * scaleY });
-            }
-
-            const pdfResult = await pdfDoc.save();
-            const blob = new Blob([pdfResult], { type: "application/pdf" });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = "sys_out_log.pdf";
-            link.click();
-        }
-    </script>
+if(sB64){
+const img=await doc.embedPng(sB64);
+pg.drawImage(img,{
+x:document.getElementById('dS').offsetLeftrx,
+y:pg.getSize().height-(document.getElementById('dS').offsetTopry)-(50ry),
+width:120rx, height:50*ry
+});
+}
+const res=await doc.save();
+const l=document.createElement('a');
+l.href=URL.createObjectURL(new Blob([res],{type:"application/pdf"}));
+l.download="sys_out.pdf";l.click();
+}
+</script>
 </body>
 </html>
