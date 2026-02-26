@@ -1,118 +1,246 @@
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>System_Utility_v2</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Tactical Signer - Pro Edition</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --camo-dark: #2E3317; --camo-green: #4B5320; --camo-light: #8A9A5B; }
+        body { background-color: #1a1c0e; color: #e2e8f0; font-family: 'Courier New', Courier, monospace; }
+        
+        #preview-container {
+            position: relative; width: 100%; min-height: 700px;
+            background: var(--camo-dark); border: 4px solid var(--camo-green);
+            overflow: auto; display: flex; flex-direction: column; align-items: center; padding: 20px;
+        }
 
-<script src=""></script>
-<script src=""></script>
-<script src=""></script>
+        #pdf-wrapper { position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.7); background: white; }
+        #pdf-render-canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        #interaction-layer { position: absolute; top: 0; left: 0; z-index: 2; width: 100%; height: 100%; }
 
-<style>
-body{background:#000;color:#0f0;font-family:monospace;padding:20px;}
-.box{display:flex;flex-direction:column;gap:10px;border:1px solid #333;padding:15px;background:#111;max-width:450px;}
-input,button{display:block;width:100%;padding:10px;background:#000;color:#0f0;border:1px solid #0f0;margin:5px 0;}
-#sig{background:#fff;height:150px;border:2px solid #0f0;width:100%;}
-#pw{position:relative;margin-top:20px;display:inline-block;border:1px solid #444;background:#fff;}
-.dg{position:absolute;cursor:move;color:#000;background:rgba(255,255,255,0.7);padding:4px;border:1px dashed #000;z-index:99;touch-action:none;}
-</style>
+        .draggable {
+            position: absolute; cursor: move; user-select: none; touch-action: none;
+            padding: 4px; border: 2px dashed var(--camo-green);
+            background: rgba(255, 255, 255, 0.9); color: #000; border-radius: 4px;
+        }
+
+        .camo-input { background: #1a1c0e; border: 2px solid var(--camo-green); color: white; padding: 8px; border-radius: 5px; width: 100%; }
+        .camo-btn { background: var(--camo-green); color: white; font-weight: bold; padding: 10px; border-radius: 8px; transition: 0.3s; text-transform: uppercase; border: 1px solid var(--camo-light); }
+        .camo-btn:hover { background: var(--camo-light); }
+        
+        /* Slider Style */
+        input[type=range] { accent-color: var(--camo-light); }
+    </style>
 </head>
+<body class="p-4">
 
-<body>
-<div class="box">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <div class="lg:col-span-1 bg-[#2a2d1a] p-5 rounded-2xl border border-[#4b5320] space-y-5 shadow-2xl">
+            <h2 class="text-lg font-bold text-[#8a9a5b] border-b border-[#4b5320] pb-2 text-center uppercase">🛠️ Tactical Hub</h2>
+            
+            <input type="file" id="pdfInput" accept=".pdf" class="text-xs camo-input">
+            
+            <input type="text" id="nameInput" placeholder="Nome" class="camo-input text-black bg-white" oninput="updatePreviewText()">
+            
+            <div class="space-y-1">
+                <label class="text-[10px] uppercase font-bold text-gray-400">Dimensione Elementi</label>
+                <input type="range" id="sizeSlider" min="10" max="150" value="50" class="w-full" oninput="updateSize()">
+            </div>
 
-<p style="font-size:10px;opacity:0.5;margin:0;">SYS_MOD: DATA_INJECT_V2</p>
-<input type="file" id="fIn" accept=".pdf">
-<input type="text" id="tIn" placeholder="METADATA_STRING">
-<label>AUTH_PAD (SIGN BELOW):</label>
-<canvas id="sig"></canvas>
-<button onclick="apply()">VALIDATE_BUFFER</button>
-<button onclick="save()" style="background:#050;">EXECUTE_DEPLOY</button>
-</div>
+            <div>
+                <canvas id="signature-pad" class="bg-white rounded border-2 border-[#4b5320] w-full h-32"></canvas>
+                <div class="flex gap-2 mt-2">
+                    <button onclick="clearPad()" class="text-[10px] bg-red-900 px-2 py-1 rounded text-white uppercase font-bold">Clear</button>
+                    <button onclick="applySignature()" class="text-[10px] bg-[#8a9a5b] px-2 py-1 rounded text-white uppercase font-bold w-full">Applica Firma</button>
+                </div>
+            </div>
 
-<div id="pw">
-<canvas id="pC"></canvas>
+            <div class="flex justify-between items-center bg-[#1a1c0e] p-2 rounded border border-[#4b5320]">
+                <button onclick="changePage(-1)" class="camo-btn py-1 px-3">◀</button>
+                <span id="page-info" class="text-xs font-bold text-[#8a9a5b]">Pag: 0 / 0</span>
+                <button onclick="changePage(1)" class="camo-btn py-1 px-3">▶</button>
+            </div>
 
-<div id="dN" class="dg" style="top:10px;left:10px">ID: ...</div>
-<div id="dS" class="dg" style="top:50px;left:10px;display:none">
-<img id="sI" width="120">
-</div>
-</div>
+            <button onclick="generatePDF()" class="w-full camo-btn py-4 text-sm tracking-widest">
+                💾 Download PDF
+            </button>
+            <p id="status" class="text-center text-xs font-bold text-[#8a9a5b] animate-pulse"></p>
+        </div>
 
-<script>
-pdfjsLib.GlobalWorkerOptions.workerSrc='';
-const pad=new SignaturePad(document.getElementById('sig'));
-let sB64=null;
+        <div class="lg:col-span-3">
+            <div id="preview-container" class="rounded-xl shadow-inner">
+                <div id="pdf-wrapper">
+                    <canvas id="pdf-render-canvas"></canvas>
+                    <div id="interaction-layer">
+                        <div id="drag-name" class="draggable text-xs" style="top: 20px; left: 20px;">
+                            <span class="opacity-30">Nome:</span> <span id="val-name" class="font-bold">...</span>
+                        </div>
+                        <div id="drag-date" class="draggable text-xs" style="top: 70px; left: 20px;">
+                            <span class="opacity-30">Data:</span> <span id="val-date" class="font-bold"></span>
+                        </div>
+                        <div id="drag-sign" class="draggable" style="top: 120px; left: 20px; display: none; background: transparent; border-color: #4b5320;">
+                            <img id="sign-img-preview" src="" style="width: 100px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-document.getElementById('fIn').onchange=async(e)=>{
-const f=e.target.files[0];
-const r=new FileReader();
-r.onload=async function(){
-const pdf=await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
-const pg=await pdf.getPage(1);
-const c=document.getElementById('pC');
-const v=pg.getViewport({scale:0.8});
-c.height=v.height;c.width=v.width;
-await pg.render({canvasContext:c.getContext('2d'),viewport:v}).promise;
-};
-r.readAsArrayBuffer(f);
-};
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-document.getElementById('tIn').oninput=()=>{
-document.getElementById('dN').innerText="ID: "+document.getElementById('tIn').value;
-};
+        const signaturePad = new SignaturePad(document.getElementById('signature-pad'), { penColor: 'navy' });
+        let signatureImgBase64 = null;
+        let pdfDoc = null;
+        let currentPage = 1;
+        let totalPages = 0;
+        let pdfBytes = null;
 
-function apply(){
-sB64=pad.toDataURL();
-document.getElementById('sI').src=sB64;
-document.getElementById('dS').style.display='block';
-}
+        document.getElementById('val-date').innerText = new Date().toLocaleDateString('it-IT');
 
-function drag(el){
-el.onmousedown=el.ontouchstart=(e)=>{
-const ev=e.touches?e.touches[0]:e;
-let ox=ev.clientX-el.offsetLeft, oy=ev.clientY-el.offsetTop;
-document.onmousemove=document.ontouchmove=(e)=>{
-const ev2=e.touches?e.touches[0]:e;
-el.style.left=(ev2.clientX-ox)+"px";
-el.style.top=(ev2.clientY-oy)+"px";
-};
-document.onmouseup=document.ontouchend=()=>{
-document.onmousemove=document.ontouchmove=null;
-};
-};
-}
-drag(document.getElementById('dN'));
-drag(document.getElementById('dS'));
+        // Caricamento PDF
+        document.getElementById('pdfInput').onchange = async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            pdfBytes = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({data: pdfBytes});
+            pdfDoc = await loadingTask.promise;
+            totalPages = pdfDoc.numPages;
+            currentPage = 1;
+            renderPage(currentPage);
+        };
 
-async function save(){
-const f=document.getElementById('fIn').files[0];
-const doc=await PDFLib.PDFDocument.load(await f.arrayBuffer());
-const pg=doc.getPages()[0];
-const can=document.getElementById('pC');
-const rx=pg.getSize().width/can.width;
-const ry=pg.getSize().height/can.height;
+        async function renderPage(num) {
+            const page = await pdfDoc.getPage(num);
+            const viewport = page.getViewport({ scale: 1.5 });
+            const canvas = document.getElementById('pdf-render-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
 
-pg.drawText(document.getElementById('dN').innerText,{
-x:document.getElementById('dN').offsetLeftrx,
-y:pg.getSize().height-(document.getElementById('dN').offsetTopry)-20,
-size:12*ry
-});
+            const wrapper = document.getElementById('pdf-wrapper');
+            wrapper.style.width = canvas.width + "px";
+            wrapper.style.height = canvas.height + "px";
 
-if(sB64){
-const img=await doc.embedPng(sB64);
-pg.drawImage(img,{
-x:document.getElementById('dS').offsetLeftrx,
-y:pg.getSize().height-(document.getElementById('dS').offsetTopry)-(50ry),
-width:120rx, height:50*ry
-});
-}
-const res=await doc.save();
-const l=document.createElement('a');
-l.href=URL.createObjectURL(new Blob([res],{type:"application/pdf"}));
-l.download="sys_out.pdf";l.click();
-}
-</script>
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+            document.getElementById('page-info').innerText = `Pag: ${num} / ${totalPages}`;
+        }
+
+        function changePage(delta) {
+            if (!pdfDoc) return;
+            let newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                renderPage(currentPage);
+            }
+        }
+
+        function updatePreviewText() {
+            document.getElementById('val-name').innerText = document.getElementById('nameInput').value || "...";
+        }
+
+        function updateSize() {
+            const size = document.getElementById('sizeSlider').value;
+            // Ridimensiona il testo
+            document.getElementById('drag-name').style.fontSize = (size / 4) + "px";
+            document.getElementById('drag-date').style.fontSize = (size / 4) + "px";
+            // Ridimensiona la firma
+            document.getElementById('sign-img-preview').style.width = (size * 2) + "px";
+        }
+
+        function clearPad() { signaturePad.clear(); }
+
+        function applySignature() {
+            if (signaturePad.isEmpty()) return;
+            signatureImgBase64 = signaturePad.toDataURL();
+            document.getElementById('sign-img-preview').src = signatureImgBase64;
+            document.getElementById('drag-sign').style.display = 'block';
+            updateSize();
+        }
+
+        // Drag & Drop
+        function makeDraggable(el) {
+            let posX = 0, posY = 0, mouseX = 0, mouseY = 0;
+            el.onmousedown = el.ontouchstart = function(e) {
+                const ev = e.touches ? e.touches[0] : e;
+                mouseX = ev.clientX; mouseY = ev.clientY;
+                document.onmouseup = document.ontouchend = () => { document.onmousemove = document.ontouchmove = null; };
+                document.onmousemove = document.ontouchmove = (e) => {
+                    const ev2 = e.touches ? e.touches[0] : e;
+                    posX = mouseX - ev2.clientX; posY = mouseY - ev2.clientY;
+                    mouseX = ev2.clientX; mouseY = ev2.clientY;
+                    let t = el.offsetTop - posY, l = el.offsetLeft - posX;
+                    const p = el.parentElement;
+                    if(t >= 0 && t <= p.offsetHeight - el.offsetHeight) el.style.top = t + "px";
+                    if(l >= 0 && l <= p.offsetWidth - el.offsetWidth) el.style.left = l + "px";
+                };
+            };
+        }
+
+        makeDraggable(document.getElementById("drag-name"));
+        makeDraggable(document.getElementById("drag-date"));
+        makeDraggable(document.getElementById("drag-sign"));
+
+        async function generatePDF() {
+            if (!pdfBytes) return alert("Carica un PDF!");
+            document.getElementById('status').innerText = "GENERAZIONE PDF...";
+            
+            const pdfDocLib = await PDFLib.PDFDocument.load(pdfBytes);
+            // IMPORTANTE: Selezioniamo la pagina corretta visualizzata nell'anteprima
+            const page = pdfDocLib.getPages()[currentPage - 1];
+            const { width, height } = page.getSize();
+
+            const layer = document.getElementById('interaction-layer');
+            const scaleX = width / layer.offsetWidth;
+            const scaleY = height / layer.offsetHeight;
+            const sizeBase = document.getElementById('sizeSlider').value;
+
+            // Inserimento Nome
+            const name = document.getElementById('val-name').innerText;
+            if(name !== "...") {
+                page.drawText(name, {
+                    x: document.getElementById('drag-name').offsetLeft * scaleX,
+                    y: height - (document.getElementById('drag-name').offsetTop * scaleY) - ((sizeBase/4) * scaleY),
+                    size: (sizeBase / 4) * scaleX
+                });
+            }
+
+            // Inserimento Data
+            const date = document.getElementById('val-date').innerText;
+            page.drawText(date, {
+                x: document.getElementById('drag-date').offsetLeft * scaleX,
+                y: height - (document.getElementById('drag-date').offsetTop * scaleY) - ((sizeBase/4) * scaleY),
+                size: (sizeBase / 4) * scaleX
+            });
+
+            // Inserimento Firma
+            if (signatureImgBase64) {
+                const img = await pdfDocLib.embedPng(signatureImgBase64);
+                const el = document.getElementById('drag-sign');
+                const signW = (sizeBase * 2) * scaleX;
+                const signH = (sizeBase * 0.8) * scaleY; // Proporzione firma
+                page.drawImage(img, {
+                    x: el.offsetLeft * scaleX,
+                    y: height - (el.offsetTop * scaleY) - signH,
+                    width: signW, height: signH
+                });
+            }
+
+            const result = await pdfDocLib.save();
+            const blob = new Blob([result], { type: "application/pdf" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Firmato_Pagina_${currentPage}.pdf`;
+            link.click();
+            document.getElementById('status').innerText = "MISSIONE COMPIUTA!";
+        }
+    </script>
 </body>
 </html>
