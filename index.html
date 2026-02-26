@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Utility - Data Processor</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Courier New', Courier, monospace; }
+        #preview-container { background: #f0f0f0; border: 1px solid #ddd; position: relative; width: 100%; height: 450px; overflow: hidden; }
+        .draggable { position: absolute; cursor: move; touch-action: none; font-size: 12px; color: #333; }
+        #signature-pad { border: 1px solid #ddd; width: 100%; height: 120px; filter: grayscale(1); }
+    </style>
+</head>
+<body class="bg-gray-200 p-4">
+
+    <div class="max-w-4xl mx-auto bg-gray-100 border border-gray-400 p-6 shadow-sm">
+        <h1 class="text-xs text-gray-500 mb-4 uppercase tracking-widest">System_Log_Processor_v1.0.4</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-4 border-r border-gray-300 pr-4">
+                <div>
+                    <label class="text-[10px] text-gray-600 block">SOURCE_FILE.bin</label>
+                    <input type="file" id="pdfInput" accept=".pdf" class="w-full text-[10px] bg-white border p-1">
+                </div>
+                
+                <input type="text" id="nameInput" placeholder="STRING_ID" class="w-full text-[10px] border p-2" oninput="updatePreviewText()">
+                
+                <div>
+                    <label class="text-[10px] text-gray-600 block">INPUT_BUFFER</label>
+                    <canvas id="signature-pad"></canvas>
+                    <div class="flex gap-2 mt-1">
+                        <button onclick="clearPad()" class="text-[9px] border px-2 py-1">RESET</button>
+                        <button onclick="applySignature()" class="text-[9px] border bg-gray-300 px-2 py-1">VALIDATE</button>
+                    </div>
+                </div>
+
+                <button onclick="generatePDF()" class="w-full bg-gray-600 text-white text-[10px] py-2 hover:bg-black transition">
+                    EXECUTE_EXPORT
+                </button>
+            </div>
+
+            <div class="md:col-span-2">
+                <div id="preview-container">
+                    <div id="pdf-page-mock" class="bg-white mx-auto relative shadow-inner" style="width: 300px; height: 420px; top: 15px;">
+                        <div id="drag-name" class="draggable" style="top: 20px; left: 20px;">ID_STR: ...</div>
+                        <div id="drag-date" class="draggable" style="top: 40px; left: 20px;">TS_LOG: 2026-02-26</div>
+                        <div id="drag-sign" class="draggable" style="top: 80px; left: 20px; display: none;">
+                            <img id="sign-img-preview" src="" style="width: 80px; opacity: 0.8;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Logica JavaScript invariata ma con ID/Testi rinominati per coerenza
+        const signaturePad = new SignaturePad(document.getElementById('signature-pad'), { penColor: 'black' });
+        let signatureImgBase64 = null;
+        document.getElementById('drag-date').innerText = "TS_LOG: " + new Date().toISOString().split('T')[0];
+
+        function updatePreviewText() {
+            document.getElementById('drag-name').innerText = "ID_STR: " + document.getElementById('nameInput').value;
+        }
+
+        function clearPad() { signaturePad.clear(); }
+
+        function applySignature() {
+            if (signaturePad.isEmpty()) return;
+            signatureImgBase64 = signaturePad.toDataURL();
+            document.getElementById('sign-img-preview').src = signatureImgBase64;
+            document.getElementById('drag-sign').style.display = 'block';
+        }
+
+        function makeDraggable(el) {
+            let posX = 0, posY = 0, mouseX = 0, mouseY = 0;
+            el.onmousedown = el.ontouchstart = dragMouseDown;
+            function dragMouseDown(e) {
+                const event = e.touches ? e.touches[0] : e;
+                mouseX = event.clientX; mouseY = event.clientY;
+                document.onmouseup = document.ontouchend = () => { document.onmousemove = document.ontouchmove = null; };
+                document.onmousemove = document.ontouchmove = (e) => {
+                    const ev = e.touches ? e.touches[0] : e;
+                    posX = mouseX - ev.clientX; posY = mouseY - ev.clientY;
+                    mouseX = ev.clientX; mouseY = ev.clientY;
+                    el.style.top = (el.offsetTop - posY) + "px";
+                    el.style.left = (el.offsetLeft - posX) + "px";
+                };
+            }
+        }
+
+        makeDraggable(document.getElementById("drag-name"));
+        makeDraggable(document.getElementById("drag-date"));
+        makeDraggable(document.getElementById("drag-sign"));
+
+        async function generatePDF() {
+            const file = document.getElementById('pdfInput').files[0];
+            if (!file) return;
+            const pdfBytes = await file.arrayBuffer();
+            const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+            const page = pdfDoc.getPages()[0];
+            const { width, height } = page.getSize();
+            const mock = document.getElementById('pdf-page-mock');
+            const scaleX = width / mock.offsetWidth;
+            const scaleY = height / mock.offsetHeight;
+
+            page.drawText(document.getElementById('drag-name').innerText, { x: document.getElementById('drag-name').offsetLeft * scaleX, y: height - (document.getElementById('drag-name').offsetTop * scaleY) - 15, size: 10 });
+            page.drawText(document.getElementById('drag-date').innerText, { x: document.getElementById('drag-date').offsetLeft * scaleX, y: height - (document.getElementById('drag-date').offsetTop * scaleY) - 15, size: 10 });
+
+            if (signatureImgBase64) {
+                const signImg = await pdfDoc.embedPng(signatureImgBase64);
+                const signEl = document.getElementById('drag-sign');
+                page.drawImage(signImg, { x: signEl.offsetLeft * scaleX, y: height - (signEl.offsetTop * scaleY) - 40, width: 80 * scaleX, height: 35 * scaleY });
+            }
+
+            const pdfResult = await pdfDoc.save();
+            const blob = new Blob([pdfResult], { type: "application/pdf" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "sys_out_log.pdf";
+            link.click();
+        }
+    </script>
+</body>
+</html>
