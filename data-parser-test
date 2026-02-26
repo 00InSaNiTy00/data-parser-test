@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System_Utility_v2</title>
+
+<script src=""></script>
+<script src=""></script>
+<script src=""></script>
+
+<style>
+body{background:#000;color:#0f0;font-family:monospace;padding:20px;}
+.box{display:flex;flex-direction:column;gap:10px;border:1px solid #333;padding:15px;background:#111;max-width:450px;}
+input,button{display:block;width:100%;padding:10px;background:#000;color:#0f0;border:1px solid #0f0;margin:5px 0;}
+#sig{background:#fff;height:150px;border:2px solid #0f0;width:100%;}
+#pw{position:relative;margin-top:20px;display:inline-block;border:1px solid #444;background:#fff;}
+.dg{position:absolute;cursor:move;color:#000;background:rgba(255,255,255,0.7);padding:4px;border:1px dashed #000;z-index:99;touch-action:none;}
+</style>
+</head>
+
+<body>
+<div class="box">
+
+<p style="font-size:10px;opacity:0.5;margin:0;">SYS_MOD: DATA_INJECT_V2</p>
+<input type="file" id="fIn" accept=".pdf">
+<input type="text" id="tIn" placeholder="METADATA_STRING">
+<label>AUTH_PAD (SIGN BELOW):</label>
+<canvas id="sig"></canvas>
+<button onclick="apply()">VALIDATE_BUFFER</button>
+<button onclick="save()" style="background:#050;">EXECUTE_DEPLOY</button>
+</div>
+
+<div id="pw">
+<canvas id="pC"></canvas>
+
+<div id="dN" class="dg" style="top:10px;left:10px">ID: ...</div>
+<div id="dS" class="dg" style="top:50px;left:10px;display:none">
+<img id="sI" width="120">
+</div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='';
+const pad=new SignaturePad(document.getElementById('sig'));
+let sB64=null;
+
+document.getElementById('fIn').onchange=async(e)=>{
+const f=e.target.files[0];
+const r=new FileReader();
+r.onload=async function(){
+const pdf=await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+const pg=await pdf.getPage(1);
+const c=document.getElementById('pC');
+const v=pg.getViewport({scale:0.8});
+c.height=v.height;c.width=v.width;
+await pg.render({canvasContext:c.getContext('2d'),viewport:v}).promise;
+};
+r.readAsArrayBuffer(f);
+};
+
+document.getElementById('tIn').oninput=()=>{
+document.getElementById('dN').innerText="ID: "+document.getElementById('tIn').value;
+};
+
+function apply(){
+sB64=pad.toDataURL();
+document.getElementById('sI').src=sB64;
+document.getElementById('dS').style.display='block';
+}
+
+function drag(el){
+el.onmousedown=el.ontouchstart=(e)=>{
+const ev=e.touches?e.touches[0]:e;
+let ox=ev.clientX-el.offsetLeft, oy=ev.clientY-el.offsetTop;
+document.onmousemove=document.ontouchmove=(e)=>{
+const ev2=e.touches?e.touches[0]:e;
+el.style.left=(ev2.clientX-ox)+"px";
+el.style.top=(ev2.clientY-oy)+"px";
+};
+document.onmouseup=document.ontouchend=()=>{
+document.onmousemove=document.ontouchmove=null;
+};
+};
+}
+drag(document.getElementById('dN'));
+drag(document.getElementById('dS'));
+
+async function save(){
+const f=document.getElementById('fIn').files[0];
+const doc=await PDFLib.PDFDocument.load(await f.arrayBuffer());
+const pg=doc.getPages()[0];
+const can=document.getElementById('pC');
+const rx=pg.getSize().width/can.width;
+const ry=pg.getSize().height/can.height;
+
+pg.drawText(document.getElementById('dN').innerText,{
+x:document.getElementById('dN').offsetLeftrx,
+y:pg.getSize().height-(document.getElementById('dN').offsetTopry)-20,
+size:12*ry
+});
+
+if(sB64){
+const img=await doc.embedPng(sB64);
+pg.drawImage(img,{
+x:document.getElementById('dS').offsetLeftrx,
+y:pg.getSize().height-(document.getElementById('dS').offsetTopry)-(50ry),
+width:120rx, height:50*ry
+});
+}
+const res=await doc.save();
+const l=document.createElement('a');
+l.href=URL.createObjectURL(new Blob([res],{type:"application/pdf"}));
+l.download="sys_out.pdf";l.click();
+}
+</script>
+</body>
+</html>
