@@ -3,19 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical PDF v8.2 - Stable Lock</title>
+    <title>Tactical PDF v9 - Overlord (Multi-Page)</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --camo: #4B5320; --camo-dark: #1a1c0e; --camo-light: #8A9A5B; }
+        :root { 
+            --camo-dark: #1a1c0e; 
+            --camo-light: #8A9A5B; 
+            --bg-pattern: linear-gradient(45deg, #1a1c0e 25%, #2a2d1a 25%, #2a2d1a 50%, #1a1c0e 50%, #1a1c0e 75%, #2a2d1a 75%, #2a2d1a 100%);
+        }
+        
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: var(--camo-dark); color: white; 
-            font-family: 'Courier New', monospace; overflow: hidden;
+            background: var(--camo-dark); background-image: var(--bg-pattern); background-size: 100px 100px;
+            color: white; font-family: 'Courier New', monospace; overflow: hidden;
         }
 
+        /* Viewport per scorrimento verticale di tutte le pagine */
         #main-viewport {
             height: calc(100% - 100px); width: 100%; 
             overflow-y: auto; overflow-x: hidden;
@@ -23,40 +29,51 @@
             padding: 10px 0 160px 0; -webkit-overflow-scrolling: touch;
         }
 
-        #pdf-wrapper { 
-            position: relative; background: white; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.9); 
-            width: 95%; max-width: 800px;
+        /* Container per tutte le pagine */
+        #pages-container { width: 95%; max-width: 800px; position: relative; }
+
+        .page-wrapper { 
+            position: relative; background: white; margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5); width: 100%;
         }
         
-        #pdf-canvas { width: 100% !important; height: auto !important; display: block; }
-        #interaction-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #interaction-layer > * { pointer-events: auto; }
+        canvas { width: 100% !important; height: auto !important; display: block; }
+        
+        /* Layer interattivo per ogni pagina */
+        .interaction-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            pointer-events: none; z-index: 10;
+        }
+        .interaction-layer > * { pointer-events: auto; }
 
         #bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 100px;
-            background: rgba(10, 12, 5, 0.98); backdrop-filter: blur(15px);
+            background: rgba(26, 28, 14, 0.95); backdrop-filter: blur(15px);
             border-top: 3px solid var(--camo-light);
             display: flex; justify-content: space-around; align-items: center;
             z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--camo-light); font-size: 10px; cursor: pointer; min-width: 55px; }
-        .nav-icon { font-size: 26px; margin-bottom: 4px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--camo-light); font-size: 9px; min-width: 45px; }
+        .nav-icon { font-size: 24px; margin-bottom: 2px; }
 
-        .color-dot { width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; }
-        .color-dot.active { border-color: var(--camo-light); box-shadow: 0 0 12px white; transform: scale(1.1); }
+        .color-dot { width: 28px; height: 28px; border-radius: 50%; border: 1px solid white; }
+        .color-dot.active { border-color: var(--camo-light); box-shadow: 0 0 8px white; transform: scale(1.1); }
 
-        .draggable { position: absolute; cursor: move; touch-action: none; padding: 6px; border: 1px dashed transparent; }
-        .draggable.active { border: 1px dashed var(--camo-light); background: rgba(138, 154, 91, 0.2); z-index: 500; }
+        #theme-selector {
+            position: fixed; right: 8px; top: 40%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 8px; z-index: 1001;
+            background: rgba(0,0,0,0.6); padding: 6px; border-radius: 15px;
+        }
+        .theme-opt { width: 22px; height: 22px; border-radius: 50%; border: 1px solid white; }
+
+        .draggable { position: absolute; cursor: move; touch-action: none; padding: 5px; z-index: 100; }
+        .draggable.active { border: 1px dashed var(--camo-light); background: rgba(138, 154, 91, 0.2); }
         
-        .content-note { background: transparent; outline: none; min-width: 60px; font-weight: bold; font-size: 16px; pointer-events: auto; }
-
         .resizer {
             width: 35px; height: 35px; background: var(--camo-light);
             position: absolute; right: -17px; bottom: -17px;
             border-radius: 50%; border: 2px solid white; display: none;
-            touch-action: none; z-index: 1001;
         }
         .draggable.active .resizer { display: block; }
 
@@ -65,37 +82,41 @@
             display: none; flex-direction: column; align-items: center; justify-content: center;
             z-index: 2000; padding: 20px;
         }
-        #full-sig-pad { background: white; border-radius: 15px; width: 100%; height: 45vh; touch-action: none; }
-        .camo-input { background: #2a2d1a; border: 2px solid var(--camo-light); color: white; padding: 15px; border-radius: 12px; width: 100%; text-align: center; }
+        #full-sig-pad { background: white; border-radius: 15px; width: 100%; height: 40vh; touch-action: none; }
     </style>
 </head>
 <body onclick="deselectAll()">
 
     <div id="main-viewport">
-        <div id="pdf-wrapper">
-            <canvas id="pdf-canvas"></canvas>
-            <div id="interaction-layer"></div>
+        <div id="pages-container">
+            <div class="text-center mt-20 text-zinc-500">In attesa di caricamento file...</div>
         </div>
+    </div>
+
+    <div id="theme-selector">
+        <div class="theme-opt" style="background: #4B5320;" onclick="changeTheme('woodland')"></div>
+        <div class="theme-opt" style="background: #967117;" onclick="changeTheme('desert')"></div>
+        <div class="theme-opt" style="background: #2E3B44;" onclick="changeTheme('urban')"></div>
     </div>
 
     <div id="sig-modal" class="modal" onclick="event.stopPropagation()">
         <h2 class="mb-6 font-bold text-[#8a9a5b] text-xl">FIRMA OPERATIVA</h2>
         <canvas id="full-sig-pad"></canvas>
         <div class="flex gap-4 mt-8 w-full max-w-md">
-            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-4 rounded-2xl font-bold text-white">PULISCI</button>
-            <button onclick="confirmSignature()" class="flex-1 bg-[#8a9a5b] text-black font-bold py-4 rounded-2xl shadow-lg">OK</button>
+            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-4 rounded-2xl font-bold">PULISCI</button>
+            <button onclick="confirmSignature()" class="flex-1 bg-[#8a9a5b] text-black font-bold py-4 rounded-2xl">OK</button>
         </div>
     </div>
 
     <div id="name-modal" class="modal" onclick="event.stopPropagation()">
-        <h2 class="mb-6 font-bold text-[#8a9a5b] text-xl uppercase">ID Operatore</h2>
-        <input type="text" id="nameInput" placeholder="NOME" class="camo-input mb-8" oninput="syncName()">
-        <button onclick="closeModal('name-modal')" class="bg-white text-black font-bold py-4 px-12 rounded-full shadow-xl">CONFERMA</button>
+        <h2 class="mb-4 font-bold text-[#8a9a5b]">NOME OPERATORE</h2>
+        <input type="text" id="nameInput" placeholder="Inserisci nome..." class="w-full max-w-xs p-4 bg-zinc-900 border border-[#4b5320] rounded-xl mb-6 text-center">
+        <button onclick="closeModal('name-modal')" class="bg-white text-black font-bold py-3 px-10 rounded-full">CONFERMA</button>
     </div>
 
     <nav id="bottom-nav" onclick="event.stopPropagation()">
         <div class="nav-item" onclick="document.getElementById('pdf-file').click()"><span class="nav-icon">📁</span><span>APRI</span></div>
-        <div class="flex gap-3 px-2 border-l border-r border-zinc-800">
+        <div class="flex gap-2 px-1 border-l border-r border-zinc-800">
             <div id="dot-black" class="color-dot bg-black active" onclick="setTacticalColor('#000000', 'dot-black')"></div>
             <div id="dot-red" class="color-dot bg-red-600" onclick="setTacticalColor('#cc0000', 'dot-red')"></div>
             <div id="dot-blue" class="color-dot bg-blue-700" onclick="setTacticalColor('#0000bb', 'dot-blue')"></div>
@@ -110,34 +131,103 @@
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        let signaturePad, pdfBytes, pdfDoc, elementsRegistry = [], currentColor = '#000000';
-        let isResizing = false;
+        let signaturePad, pdfBytes, elementsRegistry = [], currentColor = '#000000', isResizing = false;
 
         window.onload = () => {
             const canvas = document.getElementById('full-sig-pad');
             signaturePad = new SignaturePad(canvas, { penColor: 'black', minWidth: 2.5, maxWidth: 3.5 });
-            window.addEventListener('resize', resizeSigCanvas);
-            resizeSigCanvas();
-            createDraggable('op-box', 'text', 'OPERATORE: ...');
-            createDraggable('date-box', 'text', 'DATA: ' + new Date().toLocaleDateString('it-IT'));
+            window.addEventListener('resize', () => { 
+                const ratio = window.devicePixelRatio || 1;
+                canvas.width = canvas.offsetWidth * ratio; canvas.height = canvas.offsetHeight * ratio;
+                canvas.getContext("2d").scale(ratio, ratio);
+            });
         };
 
-        function resizeSigCanvas() {
-            const canvas = document.getElementById('full-sig-pad');
-            const ratio = window.devicePixelRatio || 1;
-            canvas.width = canvas.offsetWidth * ratio; canvas.height = canvas.offsetHeight * ratio;
-            canvas.getContext("2d").scale(ratio, ratio);
+        function changeTheme(t) {
+            const r = document.documentElement;
+            if(t==='woodland'){ r.style.setProperty('--camo-dark','#1a1c0e'); r.style.setProperty('--bg-pattern','linear-gradient(45deg,#1a1c0e 25%,#2a2d1a 25%,#2a2d1a 50%,#1a1c0e 50%,#1a1c0e 75%,#2a2d1a 75%,#2a2d1a 100%)'); }
+            if(t==='desert'){ r.style.setProperty('--camo-dark','#4d3d26'); r.style.setProperty('--bg-pattern','linear-gradient(45deg,#4d3d26 25%,#7a6142 25%,#7a6142 50%,#4d3d26 50%,#4d3d26 75%,#7a6142 75%,#7a6142 100%)'); }
+            if(t==='urban'){ r.style.setProperty('--camo-dark','#1a1a1a'); r.style.setProperty('--bg-pattern','linear-gradient(45deg,#1a1a1a 25%,#333333 25%,#333333 50%,#1a1a1a 50%,#1a1a1a 75%,#333333 75%,#333333 100%)'); }
         }
+
+        document.getElementById('pdf-file').onchange = async (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            pdfBytes = new Uint8Array(await file.arrayBuffer());
+            const pdfDoc = await pdfjsLib.getDocument({data: pdfBytes.slice(0)}).promise;
+            const container = document.getElementById('pages-container');
+            container.innerHTML = '';
+            elementsRegistry = [];
+
+            for(let i=1; i<=pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 });
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = 'page-wrapper';
+                wrapper.id = `page-wrapper-${i}`;
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width; canvas.height = viewport.height;
+                wrapper.appendChild(canvas);
+                
+                const layer = document.createElement('div');
+                layer.className = 'interaction-layer';
+                layer.id = `layer-${i}`;
+                wrapper.appendChild(layer);
+                
+                container.appendChild(wrapper);
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            }
+        };
 
         function setTacticalColor(hex, id) {
             currentColor = hex; signaturePad.penColor = hex;
             document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            const active = document.querySelector('.draggable.active');
-            if(active) {
-                const item = elementsRegistry.find(i => i.id === active.id);
-                if(item) { item.color = hex; if(item.type === 'sig') active.querySelector('img').style.filter = getColFilter(hex); else active.style.color = hex; }
+        }
+
+        function createDraggable(type, val, targetLayerId = 'layer-1') {
+            const id = 'el-' + Date.now();
+            const wrap = document.createElement('div');
+            wrap.id = id; wrap.className = 'draggable';
+            wrap.style.top = '50px'; wrap.style.left = '50px'; wrap.style.color = currentColor;
+
+            const content = document.createElement('div');
+            content.className = 'content';
+            if(type === 'text' || type === 'note') {
+                if(type === 'note') content.contentEditable = true;
+                content.innerText = val;
+                elementsRegistry.push({ id, type, color: currentColor, pageNum: parseInt(targetLayerId.split('-')[1]) });
+            } else {
+                const img = document.createElement('img');
+                img.src = val; img.style.width = '120px';
+                if(currentColor !== '#000000') img.style.filter = getColFilter(currentColor);
+                content.appendChild(img);
+                elementsRegistry.push({ id, type, data: val, color: currentColor, pageNum: parseInt(targetLayerId.split('-')[1]) });
             }
+
+            wrap.appendChild(content);
+            const res = document.createElement('div'); res.className = 'resizer'; wrap.appendChild(res);
+            document.getElementById(targetLayerId).appendChild(wrap);
+            initStableInteractions(wrap, (type === 'sig' ? content.querySelector('img') : content), type === 'sig');
+        }
+
+        function initStableInteractions(el, target, isImg) {
+            let sx, sy, ix, iy, sw, sh, rt;
+            const onMove = (e) => { if(isResizing) return; const ev = e.touches[0]; el.style.left = (ix + (ev.clientX - sx)) + 'px'; el.style.top = (iy + (ev.clientY - sy)) + 'px'; };
+            el.addEventListener('touchstart', (e) => {
+                if(e.target.className === 'resizer' || isResizing) return;
+                deselectAll(); el.classList.add('active');
+                const ev = e.touches[0]; sx = ev.clientX; sy = ev.clientY; ix = el.offsetLeft; iy = el.offsetTop;
+                document.addEventListener('touchmove', onMove, {passive:false});
+            }, {passive:false});
+            document.addEventListener('touchend', () => document.removeEventListener('touchmove', onMove));
+
+            const res = el.querySelector('.resizer');
+            const onResizeMove = (e) => { e.preventDefault(); const ev = e.touches[0]; const nw = Math.max(40, sw + (ev.clientX - sx)); target.style.width = nw + 'px'; if(isImg) target.style.height = (nw/rt)+'px'; else el.style.fontSize = (nw/8)+'px'; };
+            res.addEventListener('touchstart', (e) => { e.stopPropagation(); e.preventDefault(); isResizing = true; const ev = e.touches[0]; sx = ev.clientX; sw = target.offsetWidth; sh = target.offsetHeight; rt = sw/sh; document.addEventListener('touchmove', onResizeMove, {passive:false}); }, {passive:false});
+            document.addEventListener('touchend', () => isResizing = false);
         }
 
         function getColFilter(hex) {
@@ -146,137 +236,44 @@
             return "none";
         }
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'sig-modal') setTimeout(resizeSigCanvas, 100); }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function deselectAll() { if(!isResizing) document.querySelectorAll('.draggable').forEach(d => d.classList.remove('active')); }
-        function syncName() { const val = document.getElementById('nameInput').value || "..."; const el = document.getElementById('op-box'); if(el) el.querySelector('.content').innerText = "OPERATORE: " + val; }
-
-        function createDraggable(id, type, val) {
-            const wrap = document.createElement('div');
-            wrap.id = id; wrap.className = 'draggable';
-            wrap.style.top = (id === 'date-box' ? '85px' : '20px');
-            wrap.style.left = '20px'; wrap.style.color = currentColor;
-
-            const onStart = (e) => { e.stopPropagation(); if(!isResizing) { deselectAll(); wrap.classList.add('active'); } };
-            wrap.addEventListener('touchstart', onStart, {passive: false});
-
-            const content = document.createElement('div');
-            content.className = 'content';
-            if(type === 'text' || type === 'note') {
-                if(type === 'note') { content.className += ' content-note'; content.contentEditable = true; }
-                content.innerText = val;
-                elementsRegistry.push({ id, type, color: currentColor });
-            }
-            if(type === 'sig') {
-                const img = document.createElement('img');
-                img.src = val; img.style.width = '140px'; img.style.pointerEvents = 'none';
-                img.style.filter = getColFilter(currentColor);
-                content.appendChild(img);
-                elementsRegistry.push({ id, type, data: val, color: currentColor });
-            }
-
-            wrap.appendChild(content);
-            const res = document.createElement('div'); res.className = 'resizer'; wrap.appendChild(res);
-            
-            if(!id.includes('box')) {
-                const del = document.createElement('div');
-                del.innerHTML = '×'; del.className = "del-btn";
-                del.style = "position:absolute; top:-15px; left:-15px; background:#991b1b; color:white; border-radius:50%; width:30px; height:30px; display:none; align-items:center; justify-content:center; border:2px solid white; font-weight:bold;";
-                del.onclick = (e) => { e.stopPropagation(); wrap.remove(); elementsRegistry = elementsRegistry.filter(e => e.id !== id); };
-                wrap.appendChild(del);
-                wrap.addEventListener('touchstart', (e) => { e.stopPropagation(); document.querySelectorAll('.del-btn').forEach(b => b.style.display = 'none'); del.style.display = 'flex'; });
-            }
-
-            document.getElementById('interaction-layer').appendChild(wrap);
-            initStableInteractions(wrap, (type === 'sig' ? content.querySelector('img') : content), type === 'sig');
-        }
-
-        function initStableInteractions(el, target, isImg) {
-            let sx, sy, ix, iy, sw, sh, rt;
-
-            const onMove = (e) => {
-                if(isResizing) return;
-                const ev = e.touches ? e.touches[0] : e;
-                el.style.left = (ix + (ev.clientX - sx)) + 'px';
-                el.style.top = (iy + (ev.clientY - sy)) + 'px';
-            };
-
-            const onEnd = () => {
-                document.removeEventListener('mousemove', onMove);
-                document.removeEventListener('touchmove', onMove);
-            };
-
-            el.addEventListener('touchstart', (e) => {
-                if(e.target.className === 'resizer' || isResizing) return;
-                const ev = e.touches[0]; sx = ev.clientX; sy = ev.clientY; ix = el.offsetLeft; iy = el.offsetTop;
-                document.addEventListener('touchmove', onMove, {passive:false});
-                document.addEventListener('touchend', onEnd);
-            }, {passive: false});
-
-            const res = el.querySelector('.resizer');
-            const onResizeMove = (e) => {
-                e.preventDefault();
-                const ev = e.touches ? e.touches[0] : e;
-                const nw = Math.max(50, sw + (ev.clientX - sx));
-                target.style.width = nw + 'px';
-                if(isImg) target.style.height = (nw / rt) + 'px';
-                else el.style.fontSize = (nw / 10) + 'px';
-            };
-
-            const onResizeEnd = (e) => {
-                isResizing = false;
-                document.removeEventListener('touchmove', onResizeMove);
-                document.removeEventListener('touchend', onResizeEnd);
-            };
-
-            res.addEventListener('touchstart', (e) => {
-                e.stopPropagation(); e.preventDefault();
-                isResizing = true;
-                const ev = e.touches[0]; sx = ev.clientX; sw = target.offsetWidth; sh = target.offsetHeight; rt = sw/sh;
-                document.activeElement.blur(); // Chiude tastiera se aperta
-                document.addEventListener('touchmove', onResizeMove, {passive:false});
-                document.addEventListener('touchend', onResizeEnd);
-            }, {passive: false});
-        }
-
-        document.getElementById('pdf-file').onchange = async (e) => {
-            const file = e.target.files[0];
-            pdfBytes = new Uint8Array(await file.arrayBuffer());
-            pdfDoc = await pdfjsLib.getDocument({data: pdfBytes.slice(0)}).promise;
-            const page = await pdfDoc.getPage(1);
-            const vp = page.getViewport({ scale: 1.5 });
-            const canvas = document.getElementById('pdf-canvas');
-            canvas.width = vp.width; canvas.height = vp.height;
-            document.getElementById('pdf-wrapper').style.width = "95%"; 
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-        };
 
         function confirmSignature() {
             if(signaturePad.isEmpty()) return;
-            createDraggable('sig-'+Date.now(), 'sig', signaturePad.toDataURL());
+            createDraggable('sig', signaturePad.toDataURL(), 'layer-1');
             closeModal('sig-modal');
         }
-        function addNote() { createDraggable('note-'+Date.now(), 'note', 'Testo'); }
+        function addNote() { createDraggable('note', 'Nuova Nota', 'layer-1'); }
+        
+        // Per il nome operatore, lo mette su pag 1 di default
+        document.querySelector('#name-modal button').onclick = () => {
+            createDraggable('text', 'OP: ' + document.getElementById('nameInput').value, 'layer-1');
+            closeModal('name-modal');
+        };
 
         async function generatePDF() {
-            if(!pdfBytes) return alert("Apri un file!");
+            if(!pdfBytes) return;
             const lib = await PDFLib.PDFDocument.load(pdfBytes.slice(0));
-            const page = lib.getPages()[0];
-            const { width, height } = page.getSize();
-            const layer = document.getElementById('interaction-layer');
-            const sx = width / layer.offsetWidth, sy = height / layer.offsetHeight;
+            const pages = lib.getPages();
 
             for(let item of elementsRegistry) {
                 const el = document.getElementById(item.id);
                 if(!el) continue;
-                const r = parseInt(item.color.slice(1,3), 16) / 255 || 0;
-                const g = parseInt(item.color.slice(3,5), 16) / 255 || 0;
-                const b = parseInt(item.color.slice(5,7), 16) / 255 || 0;
+                const page = pages[item.pageNum - 1];
+                const layer = document.getElementById(`layer-${item.pageNum}`);
+                const { width, height } = page.getSize();
+                const sx = width / layer.offsetWidth, sy = height / layer.offsetHeight;
+                
+                const r = parseInt(item.color.slice(1,3),16)/255;
+                const g = parseInt(item.color.slice(3,5),16)/255;
+                const b = parseInt(item.color.slice(5,7),16)/255;
 
                 if(item.type !== 'sig') {
                     const c = el.querySelector('.content');
                     const fs = parseFloat(window.getComputedStyle(c).fontSize) * sx;
-                    page.drawText(c.innerText.trim(), { x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - fs, size: fs, color: PDFLib.rgb(r, g, b)});
+                    page.drawText(c.innerText.trim(), { x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - fs, size: fs, color: PDFLib.rgb(r,g,b)});
                 } else {
                     const img = await lib.embedPng(item.data.split(',')[1]);
                     const i = el.querySelector('img');
@@ -284,9 +281,7 @@
                 }
             }
             const res = await lib.save();
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([res], {type:"application/pdf"}));
-            link.download = "Tactical_Final_v8_2.pdf"; link.click();
+            const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([res],{type:"application/pdf"})); link.download = "MultiPage_Tactical.pdf"; link.click();
         }
     </script>
 </body>
