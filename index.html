@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical PDF v8.1 - Max View</title>
+    <title>Tactical PDF v8.2 - Stable Lock</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -20,20 +20,16 @@
             height: calc(100% - 100px); width: 100%; 
             overflow-y: auto; overflow-x: hidden;
             display: flex; flex-direction: column; align-items: center;
-            padding: 10px 0 160px 0; /* Padding abbondante per scorrere oltre la barra */
-            -webkit-overflow-scrolling: touch;
+            padding: 10px 0 160px 0; -webkit-overflow-scrolling: touch;
         }
 
-        /* LARGHEZZA PORTATA AL 95% */
         #pdf-wrapper { 
             position: relative; background: white; 
             box-shadow: 0 0 50px rgba(0,0,0,0.9); 
-            width: 95%; 
-            max-width: 800px;
+            width: 95%; max-width: 800px;
         }
         
         #pdf-canvas { width: 100% !important; height: auto !important; display: block; }
-
         #interaction-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #interaction-layer > * { pointer-events: auto; }
 
@@ -48,18 +44,19 @@
         .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--camo-light); font-size: 10px; cursor: pointer; min-width: 55px; }
         .nav-icon { font-size: 26px; margin-bottom: 4px; }
 
-        .color-dot { width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; cursor: pointer; }
+        .color-dot { width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; }
         .color-dot.active { border-color: var(--camo-light); box-shadow: 0 0 12px white; transform: scale(1.1); }
 
         .draggable { position: absolute; cursor: move; touch-action: none; padding: 6px; border: 1px dashed transparent; }
         .draggable.active { border: 1px dashed var(--camo-light); background: rgba(138, 154, 91, 0.2); z-index: 500; }
         
-        .content-note { background: transparent; outline: none; min-width: 60px; font-weight: bold; font-size: 16px; }
+        .content-note { background: transparent; outline: none; min-width: 60px; font-weight: bold; font-size: 16px; pointer-events: auto; }
 
         .resizer {
-            width: 32px; height: 32px; background: var(--camo-light);
-            position: absolute; right: -16px; bottom: -16px;
+            width: 35px; height: 35px; background: var(--camo-light);
+            position: absolute; right: -17px; bottom: -17px;
             border-radius: 50%; border: 2px solid white; display: none;
+            touch-action: none; z-index: 1001;
         }
         .draggable.active .resizer { display: block; }
 
@@ -69,12 +66,7 @@
             z-index: 2000; padding: 20px;
         }
         #full-sig-pad { background: white; border-radius: 15px; width: 100%; height: 45vh; touch-action: none; }
-        
-        .camo-input {
-            background: #2a2d1a; border: 2px solid var(--camo-light);
-            color: white; padding: 15px; border-radius: 12px; width: 100%; 
-            max-width: 300px; text-align: center; font-size: 18px;
-        }
+        .camo-input { background: #2a2d1a; border: 2px solid var(--camo-light); color: white; padding: 15px; border-radius: 12px; width: 100%; text-align: center; }
     </style>
 </head>
 <body onclick="deselectAll()">
@@ -90,7 +82,7 @@
         <h2 class="mb-6 font-bold text-[#8a9a5b] text-xl">FIRMA OPERATIVA</h2>
         <canvas id="full-sig-pad"></canvas>
         <div class="flex gap-4 mt-8 w-full max-w-md">
-            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-4 rounded-2xl font-bold">PULISCI</button>
+            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-4 rounded-2xl font-bold text-white">PULISCI</button>
             <button onclick="confirmSignature()" class="flex-1 bg-[#8a9a5b] text-black font-bold py-4 rounded-2xl shadow-lg">OK</button>
         </div>
     </div>
@@ -102,37 +94,24 @@
     </div>
 
     <nav id="bottom-nav" onclick="event.stopPropagation()">
-        <div class="nav-item" onclick="document.getElementById('pdf-file').click()">
-            <span class="nav-icon">📁</span><span>APRI</span>
-        </div>
-        
+        <div class="nav-item" onclick="document.getElementById('pdf-file').click()"><span class="nav-icon">📁</span><span>APRI</span></div>
         <div class="flex gap-3 px-2 border-l border-r border-zinc-800">
             <div id="dot-black" class="color-dot bg-black active" onclick="setTacticalColor('#000000', 'dot-black')"></div>
             <div id="dot-red" class="color-dot bg-red-600" onclick="setTacticalColor('#cc0000', 'dot-red')"></div>
             <div id="dot-blue" class="color-dot bg-blue-700" onclick="setTacticalColor('#0000bb', 'dot-blue')"></div>
         </div>
-
-        <div class="nav-item" onclick="openModal('sig-modal')">
-            <span class="nav-icon">🖋️</span><span>FIRMA</span>
-        </div>
-        <div class="nav-item" onclick="addNote()">
-            <span class="nav-icon">📝</span><span>NOTA</span>
-        </div>
-        <div class="nav-item" onclick="openModal('name-modal')">
-            <span class="nav-icon">👤</span><span>OPER.</span>
-        </div>
-        <div class="nav-item" onclick="generatePDF()">
-            <span class="nav-icon text-white">💾</span><span class="font-bold">SALVA</span>
-        </div>
+        <div class="nav-item" onclick="openModal('sig-modal')"><span class="nav-icon">🖋️</span><span>FIRMA</span></div>
+        <div class="nav-item" onclick="addNote()"><span class="nav-icon">📝</span><span>NOTA</span></div>
+        <div class="nav-item" onclick="openModal('name-modal')"><span class="nav-icon">👤</span><span>OPER.</span></div>
+        <div class="nav-item" onclick="generatePDF()"><span class="nav-icon text-white">💾</span><span class="font-bold">SALVA</span></div>
     </nav>
 
     <input type="file" id="pdf-file" class="hidden" accept=".pdf">
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        
-        let signaturePad, pdfBytes, pdfDoc, elementsRegistry = [];
-        let currentColor = '#000000';
+        let signaturePad, pdfBytes, pdfDoc, elementsRegistry = [], currentColor = '#000000';
+        let isResizing = false;
 
         window.onload = () => {
             const canvas = document.getElementById('full-sig-pad');
@@ -146,24 +125,18 @@
         function resizeSigCanvas() {
             const canvas = document.getElementById('full-sig-pad');
             const ratio = window.devicePixelRatio || 1;
-            canvas.width = canvas.offsetWidth * ratio;
-            canvas.height = canvas.offsetHeight * ratio;
+            canvas.width = canvas.offsetWidth * ratio; canvas.height = canvas.offsetHeight * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
         }
 
         function setTacticalColor(hex, id) {
-            currentColor = hex;
-            signaturePad.penColor = hex;
+            currentColor = hex; signaturePad.penColor = hex;
             document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             const active = document.querySelector('.draggable.active');
             if(active) {
                 const item = elementsRegistry.find(i => i.id === active.id);
-                if(item) {
-                    item.color = hex;
-                    if(item.type === 'sig') active.querySelector('img').style.filter = getColFilter(hex);
-                    else active.style.color = hex;
-                }
+                if(item) { item.color = hex; if(item.type === 'sig') active.querySelector('img').style.filter = getColFilter(hex); else active.style.color = hex; }
             }
         }
 
@@ -175,34 +148,25 @@
 
         function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'sig-modal') setTimeout(resizeSigCanvas, 100); }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function deselectAll() { document.querySelectorAll('.draggable').forEach(d => d.classList.remove('active')); }
-        
-        function syncName() {
-            const val = document.getElementById('nameInput').value || "...";
-            const el = document.getElementById('op-box');
-            if(el) el.querySelector('.content').innerText = "OPERATORE: " + val;
-        }
+        function deselectAll() { if(!isResizing) document.querySelectorAll('.draggable').forEach(d => d.classList.remove('active')); }
+        function syncName() { const val = document.getElementById('nameInput').value || "..."; const el = document.getElementById('op-box'); if(el) el.querySelector('.content').innerText = "OPERATORE: " + val; }
 
         function createDraggable(id, type, val) {
             const wrap = document.createElement('div');
             wrap.id = id; wrap.className = 'draggable';
             wrap.style.top = (id === 'date-box' ? '85px' : '20px');
-            wrap.style.left = '20px';
-            wrap.style.color = currentColor;
+            wrap.style.left = '20px'; wrap.style.color = currentColor;
 
-            const onStart = (e) => { e.stopPropagation(); deselectAll(); wrap.classList.add('active'); };
-            wrap.addEventListener('mousedown', onStart);
-            wrap.addEventListener('touchstart', onStart);
+            const onStart = (e) => { e.stopPropagation(); if(!isResizing) { deselectAll(); wrap.classList.add('active'); } };
+            wrap.addEventListener('touchstart', onStart, {passive: false});
 
             const content = document.createElement('div');
             content.className = 'content';
-            
             if(type === 'text' || type === 'note') {
                 if(type === 'note') { content.className += ' content-note'; content.contentEditable = true; }
                 content.innerText = val;
                 elementsRegistry.push({ id, type, color: currentColor });
             }
-
             if(type === 'sig') {
                 const img = document.createElement('img');
                 img.src = val; img.style.width = '140px'; img.style.pointerEvents = 'none';
@@ -216,58 +180,63 @@
             
             if(!id.includes('box')) {
                 const del = document.createElement('div');
-                del.innerHTML = '×';
+                del.innerHTML = '×'; del.className = "del-btn";
                 del.style = "position:absolute; top:-15px; left:-15px; background:#991b1b; color:white; border-radius:50%; width:30px; height:30px; display:none; align-items:center; justify-content:center; border:2px solid white; font-weight:bold;";
-                del.className = "del-btn";
-                del.onclick = () => { wrap.remove(); elementsRegistry = elementsRegistry.filter(e => e.id !== id); };
+                del.onclick = (e) => { e.stopPropagation(); wrap.remove(); elementsRegistry = elementsRegistry.filter(e => e.id !== id); };
                 wrap.appendChild(del);
-                wrap.addEventListener('touchstart', () => { 
-                    document.querySelectorAll('.del-btn').forEach(b => b.style.display = 'none');
-                    del.style.display = 'flex';
-                });
+                wrap.addEventListener('touchstart', (e) => { e.stopPropagation(); document.querySelectorAll('.del-btn').forEach(b => b.style.display = 'none'); del.style.display = 'flex'; });
             }
 
             document.getElementById('interaction-layer').appendChild(wrap);
-            initInteractions(wrap, (type === 'sig' ? content.querySelector('img') : content), type === 'sig');
+            initStableInteractions(wrap, (type === 'sig' ? content.querySelector('img') : content), type === 'sig');
         }
 
-        function initInteractions(el, target, isImg) {
+        function initStableInteractions(el, target, isImg) {
             let sx, sy, ix, iy, sw, sh, rt;
-            const move = (e) => {
+
+            const onMove = (e) => {
+                if(isResizing) return;
                 const ev = e.touches ? e.touches[0] : e;
                 el.style.left = (ix + (ev.clientX - sx)) + 'px';
                 el.style.top = (iy + (ev.clientY - sy)) + 'px';
             };
-            const end = () => { document.removeEventListener('mousemove', move); document.removeEventListener('touchmove', move); };
-            
-            el.addEventListener('mousedown', (e) => {
-                if(e.target.className === 'resizer' || e.target.contentEditable === "true") return;
-                sx = e.clientX; sy = e.clientY; ix = el.offsetLeft; iy = el.offsetTop;
-                document.addEventListener('mousemove', move); document.addEventListener('mouseup', end);
-            });
+
+            const onEnd = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('touchmove', onMove);
+            };
+
             el.addEventListener('touchstart', (e) => {
-                if(e.target.className === 'resizer' || e.target.contentEditable === "true") return;
+                if(e.target.className === 'resizer' || isResizing) return;
                 const ev = e.touches[0]; sx = ev.clientX; sy = ev.clientY; ix = el.offsetLeft; iy = el.offsetTop;
-                document.addEventListener('touchmove', move, {passive:false}); document.addEventListener('touchend', end);
-            });
+                document.addEventListener('touchmove', onMove, {passive:false});
+                document.addEventListener('touchend', onEnd);
+            }, {passive: false});
 
             const res = el.querySelector('.resizer');
-            const rMove = (e) => {
+            const onResizeMove = (e) => {
+                e.preventDefault();
                 const ev = e.touches ? e.touches[0] : e;
                 const nw = Math.max(50, sw + (ev.clientX - sx));
                 target.style.width = nw + 'px';
                 if(isImg) target.style.height = (nw / rt) + 'px';
                 else el.style.fontSize = (nw / 10) + 'px';
             };
-            const rStart = (e) => {
-                e.stopPropagation(); e.preventDefault();
-                const ev = e.touches ? e.touches[0] : e;
-                sx = ev.clientX; sw = target.offsetWidth; sh = target.offsetHeight; rt = sw/sh;
-                document.addEventListener('mousemove', rMove); document.addEventListener('touchmove', rMove, {passive:false});
+
+            const onResizeEnd = (e) => {
+                isResizing = false;
+                document.removeEventListener('touchmove', onResizeMove);
+                document.removeEventListener('touchend', onResizeEnd);
             };
-            res.addEventListener('mousedown', rStart); res.addEventListener('touchstart', rStart);
-            document.addEventListener('mouseup', () => document.removeEventListener('mousemove', rMove));
-            document.addEventListener('touchend', () => document.removeEventListener('touchmove', rMove));
+
+            res.addEventListener('touchstart', (e) => {
+                e.stopPropagation(); e.preventDefault();
+                isResizing = true;
+                const ev = e.touches[0]; sx = ev.clientX; sw = target.offsetWidth; sh = target.offsetHeight; rt = sw/sh;
+                document.activeElement.blur(); // Chiude tastiera se aperta
+                document.addEventListener('touchmove', onResizeMove, {passive:false});
+                document.addEventListener('touchend', onResizeEnd);
+            }, {passive: false});
         }
 
         document.getElementById('pdf-file').onchange = async (e) => {
@@ -287,10 +256,10 @@
             createDraggable('sig-'+Date.now(), 'sig', signaturePad.toDataURL());
             closeModal('sig-modal');
         }
-        function addNote() { createDraggable('note-'+Date.now(), 'note', 'Inserisci Testo'); }
+        function addNote() { createDraggable('note-'+Date.now(), 'note', 'Testo'); }
 
         async function generatePDF() {
-            if(!pdfBytes) return alert("Carica un file!");
+            if(!pdfBytes) return alert("Apri un file!");
             const lib = await PDFLib.PDFDocument.load(pdfBytes.slice(0));
             const page = lib.getPages()[0];
             const { width, height } = page.getSize();
@@ -307,23 +276,17 @@
                 if(item.type !== 'sig') {
                     const c = el.querySelector('.content');
                     const fs = parseFloat(window.getComputedStyle(c).fontSize) * sx;
-                    page.drawText(c.innerText.trim(), { 
-                        x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - fs, 
-                        size: fs, color: PDFLib.rgb(r, g, b)
-                    });
+                    page.drawText(c.innerText.trim(), { x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - fs, size: fs, color: PDFLib.rgb(r, g, b)});
                 } else {
                     const img = await lib.embedPng(item.data.split(',')[1]);
                     const i = el.querySelector('img');
-                    page.drawImage(img, { 
-                        x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - (i.offsetHeight * sy), 
-                        width: i.offsetWidth * sx, height: i.offsetHeight * sy 
-                    });
+                    page.drawImage(img, { x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - (i.offsetHeight * sy), width: i.offsetWidth * sx, height: i.offsetHeight * sy });
                 }
             }
             const res = await lib.save();
             const link = document.createElement('a');
             link.href = URL.createObjectURL(new Blob([res], {type:"application/pdf"}));
-            link.download = "Final_Tactical_v8_1.pdf"; link.click();
+            link.download = "Tactical_Final_v8_2.pdf"; link.click();
         }
     </script>
 </body>
