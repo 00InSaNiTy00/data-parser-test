@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical PDF v8 - Field Dominance</title>
+    <title>Tactical PDF v8.1 - Max View</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -16,21 +16,20 @@
             font-family: 'Courier New', monospace; overflow: hidden;
         }
 
-        /* Area di visualizzazione corretta per evitare tagli a 3/4 */
         #main-viewport {
             height: calc(100% - 100px); width: 100%; 
             overflow-y: auto; overflow-x: hidden;
             display: flex; flex-direction: column; align-items: center;
-            padding: 20px 0 150px 0; /* Ampio margine inferiore per scorrimento */
+            padding: 10px 0 160px 0; /* Padding abbondante per scorrere oltre la barra */
             -webkit-overflow-scrolling: touch;
         }
 
-        /* PDF ridimensionato nativamente invece che con scale() */
+        /* LARGHEZZA PORTATA AL 95% */
         #pdf-wrapper { 
             position: relative; background: white; 
             box-shadow: 0 0 50px rgba(0,0,0,0.9); 
-            width: 85%; /* Occupa l'85% della larghezza per sicurezza mobile */
-            max-width: 600px;
+            width: 95%; 
+            max-width: 800px;
         }
         
         #pdf-canvas { width: 100% !important; height: auto !important; display: block; }
@@ -38,7 +37,6 @@
         #interaction-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #interaction-layer > * { pointer-events: auto; }
 
-        /* Barra di comando inferiore */
         #bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 100px;
             background: rgba(10, 12, 5, 0.98); backdrop-filter: blur(15px);
@@ -47,17 +45,16 @@
             z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--camo-light); font-size: 10px; cursor: pointer; min-width: 60px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--camo-light); font-size: 10px; cursor: pointer; min-width: 55px; }
         .nav-icon { font-size: 26px; margin-bottom: 4px; }
 
         .color-dot { width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; cursor: pointer; }
         .color-dot.active { border-color: var(--camo-light); box-shadow: 0 0 12px white; transform: scale(1.1); }
 
-        /* Box Draggable */
         .draggable { position: absolute; cursor: move; touch-action: none; padding: 6px; border: 1px dashed transparent; }
         .draggable.active { border: 1px dashed var(--camo-light); background: rgba(138, 154, 91, 0.2); z-index: 500; }
         
-        .content-note { background: transparent; outline: none; min-width: 60px; font-weight: bold; font-size: 14px; }
+        .content-note { background: transparent; outline: none; min-width: 60px; font-weight: bold; font-size: 16px; }
 
         .resizer {
             width: 32px; height: 32px; background: var(--camo-light);
@@ -66,7 +63,6 @@
         }
         .draggable.active .resizer { display: block; }
 
-        /* Modali */
         .modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.98);
             display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -91,7 +87,7 @@
     </div>
 
     <div id="sig-modal" class="modal" onclick="event.stopPropagation()">
-        <h2 id="sig-title" class="mb-6 font-bold text-[#8a9a5b] text-xl">FIRMA OPERATIVA</h2>
+        <h2 class="mb-6 font-bold text-[#8a9a5b] text-xl">FIRMA OPERATIVA</h2>
         <canvas id="full-sig-pad"></canvas>
         <div class="flex gap-4 mt-8 w-full max-w-md">
             <button onclick="signaturePad.clear()" class="flex-1 border border-white py-4 rounded-2xl font-bold">PULISCI</button>
@@ -100,14 +96,14 @@
     </div>
 
     <div id="name-modal" class="modal" onclick="event.stopPropagation()">
-        <h2 class="mb-6 font-bold text-[#8a9a5b] text-xl uppercase">Identificazione Operatore</h2>
-        <input type="text" id="nameInput" placeholder="NOME / ID" class="camo-input mb-8" oninput="syncName()">
+        <h2 class="mb-6 font-bold text-[#8a9a5b] text-xl uppercase">ID Operatore</h2>
+        <input type="text" id="nameInput" placeholder="NOME" class="camo-input mb-8" oninput="syncName()">
         <button onclick="closeModal('name-modal')" class="bg-white text-black font-bold py-4 px-12 rounded-full shadow-xl">CONFERMA</button>
     </div>
 
     <nav id="bottom-nav" onclick="event.stopPropagation()">
         <div class="nav-item" onclick="document.getElementById('pdf-file').click()">
-            <span class="nav-icon">📂</span><span>APRI</span>
+            <span class="nav-icon">📁</span><span>APRI</span>
         </div>
         
         <div class="flex gap-3 px-2 border-l border-r border-zinc-800">
@@ -140,12 +136,9 @@
 
         window.onload = () => {
             const canvas = document.getElementById('full-sig-pad');
-            // Firma spessa e professionale (v8)
             signaturePad = new SignaturePad(canvas, { penColor: 'black', minWidth: 2.5, maxWidth: 3.5 });
             window.addEventListener('resize', resizeSigCanvas);
             resizeSigCanvas();
-            
-            // Creazione elementi base
             createDraggable('op-box', 'text', 'OPERATORE: ...');
             createDraggable('date-box', 'text', 'DATA: ' + new Date().toLocaleDateString('it-IT'));
         };
@@ -163,7 +156,6 @@
             signaturePad.penColor = hex;
             document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            
             const active = document.querySelector('.draggable.active');
             if(active) {
                 const item = elementsRegistry.find(i => i.id === active.id);
@@ -194,7 +186,7 @@
         function createDraggable(id, type, val) {
             const wrap = document.createElement('div');
             wrap.id = id; wrap.className = 'draggable';
-            wrap.style.top = (id === 'date-box' ? '80px' : '20px');
+            wrap.style.top = (id === 'date-box' ? '85px' : '20px');
             wrap.style.left = '20px';
             wrap.style.color = currentColor;
 
@@ -222,7 +214,7 @@
             wrap.appendChild(content);
             const res = document.createElement('div'); res.className = 'resizer'; wrap.appendChild(res);
             
-            if(!id.includes('box')) { // Aggiungi tasto cancella solo a note e firme extra
+            if(!id.includes('box')) {
                 const del = document.createElement('div');
                 del.innerHTML = '×';
                 del.style = "position:absolute; top:-15px; left:-15px; background:#991b1b; color:white; border-radius:50%; width:30px; height:30px; display:none; align-items:center; justify-content:center; border:2px solid white; font-weight:bold;";
@@ -286,7 +278,7 @@
             const vp = page.getViewport({ scale: 1.5 });
             const canvas = document.getElementById('pdf-canvas');
             canvas.width = vp.width; canvas.height = vp.height;
-            document.getElementById('pdf-wrapper').style.width = "85%"; 
+            document.getElementById('pdf-wrapper').style.width = "95%"; 
             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
         };
 
@@ -298,7 +290,7 @@
         function addNote() { createDraggable('note-'+Date.now(), 'note', 'Inserisci Testo'); }
 
         async function generatePDF() {
-            if(!pdfBytes) return alert("Carica prima un file!");
+            if(!pdfBytes) return alert("Carica un file!");
             const lib = await PDFLib.PDFDocument.load(pdfBytes.slice(0));
             const page = lib.getPages()[0];
             const { width, height } = page.getSize();
@@ -331,7 +323,7 @@
             const res = await lib.save();
             const link = document.createElement('a');
             link.href = URL.createObjectURL(new Blob([res], {type:"application/pdf"}));
-            link.download = "Final_Tactical_v8.pdf"; link.click();
+            link.download = "Final_Tactical_v8_1.pdf"; link.click();
         }
     </script>
 </body>
