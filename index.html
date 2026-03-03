@@ -3,82 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical PDF v10 - Apex</title>
+    <title>Tactical PDF v11 - Black Ops</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
-            --bg-dark: #1a1c0e; --accent: #8A9A5B; --ui-bg: rgba(26, 28, 14, 0.95); --text: #8A9A5B;
+            --bg-dark: #1a1c0e; --accent: #8A9A5B; --ui-bg: rgba(26, 28, 14, 0.98); --text: #8A9A5B;
             --pattern: linear-gradient(45deg, #1a1c0e 25%, #2a2d1a 25%, #2a2d1a 50%, #1a1c0e 50%, #1a1c0e 75%, #2a2d1a 75%, #2a2d1a 100%);
         }
         .theme-retro { --bg-dark: #000; --accent: #0f4; --ui-bg: rgba(0,0,0,0.98); --text: #0f4; --pattern: radial-gradient(circle, #001a00, #000); }
         .theme-light { --bg-dark: #eee; --accent: #333; --ui-bg: rgba(255,255,255,0.95); --text: #333; --pattern: none; }
         .theme-cyber { --bg-dark: #0b0c10; --accent: #ff00ff; --ui-bg: rgba(11,12,16,0.95); --text: #00ffff; --pattern: linear-gradient(0deg, #1f0033, #0b0c10); }
-        .theme-ocean { --bg-dark: #001f3f; --accent: #00a8ff; --ui-bg: rgba(0,31,63,0.95); --text: #fff; --pattern: repeating-linear-gradient(45deg, #001f3f, #001f3f 10px, #002b5e 10px, #002b5e 20px); }
         
         body, html { margin:0; padding:0; width:100%; height:100%; background:var(--bg-dark); background-image:var(--pattern); background-size:100px 100px; color:var(--text); font-family:monospace; overflow:hidden; transition:0.3s; }
 
-        #main-viewport { height:calc(100% - 100px); width:100%; overflow-y:auto; display:flex; flex-direction:column; align-items:center; padding:10px 0 160px 0; -webkit-overflow-scrolling:touch; }
+        #main-viewport { height:calc(100% - 100px); width:100%; overflow-y:auto; display:flex; flex-direction:column; align-items:center; padding:10px 0 160px 0; -webkit-overflow-scrolling:touch; position: relative; }
         #pages-container { width:95%; max-width:800px; position:relative; }
-        .page-wrapper { position:relative; background:white; margin-bottom:25px; box-shadow:0 0 20px rgba(0,0,0,0.8); }
+        .page-wrapper { position:relative; background:white; margin-bottom:25px; box-shadow:0 0 25px rgba(0,0,0,1); }
         canvas { width:100% !important; height:auto !important; display:block; }
         
         .interaction-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
         .interaction-layer > * { pointer-events:auto; }
 
-        #bottom-nav { position:fixed; bottom:0; width:100%; height:100px; background:var(--ui-bg); border-top:2px solid var(--accent); display:flex; justify-content:space-around; align-items:center; z-index:1000; padding-bottom:env(safe-area-inset-bottom); }
-        .nav-item { display:flex; flex-direction:column; align-items:center; color:var(--accent); font-size:10px; cursor:pointer; }
-        .nav-icon { font-size:26px; }
+        #bottom-nav { position:fixed; bottom:0; width:100%; height:110px; background:var(--ui-bg); border-top:3px solid var(--accent); display:flex; justify-content:space-around; align-items:center; z-index:1000; padding-bottom:env(safe-area-inset-bottom); }
+        .nav-item { display:flex; flex-direction:column; align-items:center; color:var(--accent); font-size:9px; cursor:pointer; min-width:50px; }
+        .nav-icon { font-size:24px; }
 
-        .color-dot { width:30px; height:30px; border-radius:50%; border:2px solid transparent; cursor:pointer; }
-        .color-dot.active { border-color:white; transform:scale(1.1); box-shadow:0 0 8px var(--accent); }
+        .color-dot { width:28px; height:28px; border-radius:50%; border:2px solid transparent; }
+        .color-dot.active { border-color:white; box-shadow:0 0 8px var(--accent); }
 
-        #theme-selector { position:fixed; left:10px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px; z-index:1001; background:var(--ui-bg); padding:8px; border-radius:15px; border:1px solid var(--accent); }
-        .theme-btn { font-size:20px; cursor:pointer; opacity:0.5; transition:0.2s; }
+        #theme-selector { position:fixed; left:10px; top:40%; transform:translateY(-50%); display:flex; flex-direction:column; gap:10px; z-index:1001; background:var(--ui-bg); padding:10px; border-radius:15px; border:1px solid var(--accent); }
+        .theme-btn { font-size:20px; cursor:pointer; opacity:0.6; }
         .theme-btn.active { opacity:1; transform:scale(1.2); }
 
-        .draggable { position:absolute; cursor:move; padding:5px; border:1px dashed transparent; }
-        .draggable.active { border-color:var(--accent); background:rgba(128,128,128,0.2); }
-        .resizer { width:30px; height:30px; background:var(--accent); position:absolute; right:-15px; bottom:-15px; border-radius:50%; display:none; }
+        .draggable { position:absolute; cursor:move; padding:10px; border:2px dashed transparent; touch-action:none; }
+        .draggable.active { border-color:var(--accent); background:rgba(128,128,128,0.1); }
+        
+        /* Step 1: Pulsante eliminazione */
+        .del-btn { position:absolute; top:-15px; right:-15px; width:25px; height:25px; background:#ff4444; color:white; border-radius:50%; display:none; align-items:center; justify-content:center; font-weight:bold; font-size:14px; box-shadow:0 2px 5px rgba(0,0,0,0.5); }
+        .draggable.active .del-btn { display:flex; }
+
+        .resizer { width:28px; height:28px; background:var(--accent); position:absolute; right:-14px; bottom:-14px; border-radius:50%; display:none; border:2px solid white; }
         .draggable.active .resizer { display:block; }
 
-        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.95); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:2000; padding:20px; }
-        .sig-container { background:white; border:3px solid var(--accent); border-radius:10px; width:100%; max-width:500px; height:35vh; position:relative; }
+        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.96); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:2000; padding:20px; }
+        .sig-container { background:white; border:3px solid var(--accent); border-radius:10px; width:100%; max-width:500px; height:35vh; }
         #full-sig-pad { width:100%; height:100%; touch-action:none; }
     </style>
 </head>
 <body onclick="deselectAll()">
 
-    <div id="main-viewport"><div id="pages-container"><div class="text-center mt-20 opacity-50">SISTEMA IN ATTESA DI PDF...</div></div></div>
+    <div id="main-viewport"><div id="pages-container"><div class="text-center mt-20 opacity-50 uppercase tracking-widest">In attesa di file...</div></div></div>
 
     <div id="theme-selector">
         <div class="theme-btn active" onclick="applyTheme('camo', this)">🌲</div>
         <div class="theme-btn" onclick="applyTheme('retro', this)">📟</div>
         <div class="theme-btn" onclick="applyTheme('light', this)">☀️</div>
         <div class="theme-btn" onclick="applyTheme('cyber', this)">🌃</div>
-        <div class="theme-btn" onclick="applyTheme('ocean', this)">🌊</div>
     </div>
 
     <div id="sig-modal" class="modal" onclick="event.stopPropagation()">
-        <h2 class="mb-4 font-bold text-xl text-white">FIRMA</h2>
+        <h2 class="mb-4 font-bold text-xl text-white uppercase tracking-widest">Firma Tattica</h2>
         <div class="sig-container"><canvas id="full-sig-pad"></canvas></div>
         <div class="flex gap-4 mt-6 w-full max-w-md">
-            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-3 rounded-xl font-bold text-white">RESET</button>
-            <button onclick="confirmSignature()" class="flex-1 bg-white text-black py-3 rounded-xl font-bold">SALVA</button>
+            <button onclick="signaturePad.clear()" class="flex-1 border-2 border-white py-3 rounded-xl font-bold text-white">RESET</button>
+            <button onclick="confirmSignature()" class="flex-1 bg-white text-black py-3 rounded-xl font-bold">CONFERMA</button>
         </div>
     </div>
 
     <nav id="bottom-nav" onclick="event.stopPropagation()">
-        <div class="nav-item" onclick="document.getElementById('pdf-file').click()"><span class="nav-icon">📁</span><span>APRI</span></div>
-        <div class="flex gap-3 px-2 border-l border-r border-zinc-700">
+        <div class="nav-item" onclick="document.getElementById('pdf-file').click()"><span class="nav-icon">📁</span><span>OPEN</span></div>
+        <div class="flex gap-2 px-1 border-l border-r border-zinc-700">
             <div id="dot-black" class="color-dot bg-black active" onclick="setCol('#000000', this)"></div>
             <div id="dot-blue" class="color-dot bg-blue-700" onclick="setCol('#0000bb', this)"></div>
             <div id="dot-red" class="color-dot bg-red-600" onclick="setCol('#cc0000', this)"></div>
         </div>
         <div class="nav-item" onclick="openModal('sig-modal')"><span class="nav-icon">🖋️</span><span>FIRMA</span></div>
         <div class="nav-item" onclick="addNote()"><span class="nav-icon">📝</span><span>NOTA</span></div>
+        <div class="nav-item" onclick="addTimestamp()"><span class="nav-icon">🕒</span><span>DATA</span></div>
         <div class="nav-item" onclick="generatePDF()"><span class="nav-icon text-white">💾</span><span class="font-bold">EXPORT</span></div>
     </nav>
     <input type="file" id="pdf-file" class="hidden" accept=".pdf">
@@ -87,7 +91,9 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
         let signaturePad, pdfBytes, registry = [], currCol = '#000000', isResizing = false;
 
-        window.onload = () => signaturePad = new SignaturePad(document.getElementById('full-sig-pad'), { penColor:'black', minWidth:2, maxWidth:4 });
+        window.onload = () => {
+            signaturePad = new SignaturePad(document.getElementById('full-sig-pad'), { penColor:'black', minWidth:2, maxWidth:4 });
+        };
 
         function applyTheme(mode, el) {
             document.body.className = mode === 'camo' ? '' : 'theme-' + mode;
@@ -99,12 +105,11 @@
             document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); el.classList.add('active');
         }
 
-        // Il cuore della correzione per la firma
         function openModal(id) { 
             document.getElementById(id).style.display = 'flex'; 
             if(id === 'sig-modal') setTimeout(() => {
                 const canvas = document.getElementById('full-sig-pad');
-                const rect = canvas.parentElement.getBoundingClientRect(); // Prende le misure REALI del container
+                const rect = canvas.parentElement.getBoundingClientRect();
                 const ratio = Math.max(window.devicePixelRatio || 1, 1);
                 canvas.width = rect.width * ratio; canvas.height = rect.height * ratio;
                 canvas.getContext("2d").scale(ratio, ratio);
@@ -114,18 +119,17 @@
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function deselectAll() { if(!isResizing) document.querySelectorAll('.draggable').forEach(d => d.classList.remove('active')); }
 
-        // Trova la pagina attualmente visibile sullo schermo
         function getVisiblePage() {
             const wrappers = document.querySelectorAll('.page-wrapper');
-            if(!wrappers.length) return { id: 'layer-1', num: 1 };
-            let closest = wrappers[0], minDiff = Infinity;
-            const midScreen = window.innerHeight / 2;
+            const viewport = document.getElementById('main-viewport');
+            const centerPoint = viewport.scrollTop + (viewport.clientHeight / 2);
+            let target = { id: 'layer-1', num: 1 };
             wrappers.forEach((w, i) => {
-                const rect = w.getBoundingClientRect();
-                const center = rect.top + rect.height / 2;
-                if(Math.abs(midScreen - center) < minDiff) { minDiff = Math.abs(midScreen - center); closest = { id: `layer-${i+1}`, num: i+1 }; }
+                if (centerPoint >= w.offsetTop && centerPoint <= w.offsetTop + w.offsetHeight) {
+                    target = { id: `layer-${i+1}`, num: i+1 };
+                }
             });
-            return closest;
+            return target;
         }
 
         document.getElementById('pdf-file').onchange = async (e) => {
@@ -145,33 +149,69 @@
 
         function addObj(type, val) {
             const p = getVisiblePage(), id = 'el-'+Date.now(), wrap = document.createElement('div');
-            wrap.className = 'draggable active'; wrap.id = id; wrap.style.top = '20%'; wrap.style.left = '10%'; wrap.style.color = currCol;
+            wrap.className = 'draggable active'; wrap.id = id; wrap.style.top = '10%'; wrap.style.left = '10%'; wrap.style.color = currCol;
             
             const cont = document.createElement('div'); cont.className = 'content';
-            if(type === 'note') { cont.contentEditable = true; cont.innerText = val; registry.push({id, type, color:currCol, num:p.num}); }
-            else { 
-                const img = document.createElement('img'); img.src = val; img.style.width = '140px'; 
+            if(type !== 'sig') { 
+                cont.contentEditable = true; cont.innerText = val; 
+                registry.push({id, type, color:currCol, num:p.num}); 
+            } else { 
+                const img = document.createElement('img'); img.src = val; img.style.width = '120px'; 
                 if(currCol!=='#000000') img.style.filter = currCol==='#cc0000'?"invert(13%) sepia(80%) saturate(6144%) hue-rotate(351deg) brightness(89%) contrast(121%)":"invert(11%) sepia(100%) saturate(5431%) hue-rotate(244deg) brightness(85%) contrast(131%)";
                 cont.appendChild(img); registry.push({id, type, data:val, color:currCol, num:p.num}); 
             }
             
+            const del = document.createElement('div'); del.className = 'del-btn'; del.innerHTML = '×';
+            del.onclick = (e) => { e.stopPropagation(); wrap.remove(); registry = registry.filter(r => r.id !== id); };
+            
             const res = document.createElement('div'); res.className = 'resizer';
-            wrap.append(cont, res); document.getElementById(p.id).appendChild(wrap); deselectAll(); wrap.classList.add('active');
-            
-            // Logica Drag & Resize snellita
-            let sx, sy, ix, iy, sw, rt, target = type==='sig'?img:cont;
-            const move = e => { if(isResizing) return; wrap.style.left = (ix+(e.touches[0].clientX-sx))+'px'; wrap.style.top = (iy+(e.touches[0].clientY-sy))+'px'; };
-            wrap.ontouchstart = e => { if(isResizing||e.target===res) return; deselectAll(); wrap.classList.add('active'); const t=e.touches[0]; sx=t.clientX; sy=t.clientY; ix=wrap.offsetLeft; iy=wrap.offsetTop; document.addEventListener('touchmove', move, {passive:false}); };
-            document.addEventListener('touchend', () => document.removeEventListener('touchmove', move));
-            
-            res.ontouchstart = e => { e.stopPropagation(); e.preventDefault(); isResizing=true; sx=e.touches[0].clientX; sw=target.offsetWidth; rt=sw/target.offsetHeight; 
-                document.addEventListener('touchmove', resizeObj, {passive:false}); };
-            const resizeObj = e => { e.preventDefault(); const nw=Math.max(40, sw+(e.touches[0].clientX-sx)); target.style.width=nw+'px'; if(type==='sig') target.style.height=(nw/rt)+'px'; else wrap.style.fontSize=(nw/8)+'px'; };
-            document.addEventListener('touchend', () => { isResizing=false; document.removeEventListener('touchmove', resizeObj); });
+            wrap.append(cont, del, res); document.getElementById(p.id).appendChild(wrap); deselectAll(); 
+            initAdvancedDrag(wrap, type==='sig'?cont.querySelector('img'):cont, type==='sig', id);
         }
 
-        function confirmSignature() { if(signaturePad.isEmpty()) return; addObj('sig', signaturePad.toDataURL()); closeModal('sig-modal'); }
-        function addNote() { addObj('note', 'TESTO...'); }
+        function initAdvancedDrag(wrap, target, isImg, regId) {
+            let sx, sy, ix, iy, sw, rt;
+            const move = e => { 
+                if(isResizing) return; 
+                const t = e.touches[0];
+                wrap.style.left = (ix+(t.clientX-sx))+'px'; wrap.style.top = (iy+(t.clientY-sy))+'px'; 
+            };
+            
+            wrap.ontouchstart = e => { 
+                if(isResizing||e.target.className==='resizer') return; 
+                deselectAll(); wrap.classList.add('active'); 
+                const t=e.touches[0]; sx=t.clientX; sy=t.clientY; ix=wrap.offsetLeft; iy=wrap.offsetTop; 
+                document.addEventListener('touchmove', move, {passive:false}); 
+            };
+            
+            wrap.ontouchend = () => {
+                document.removeEventListener('touchmove', move);
+                // Step 4: Logic per cross-page (opzionale: qui potremmo ricalcolare il parent)
+                // Per ora assicuriamo la persistenza nel registro
+            };
+
+            const res = wrap.querySelector('.resizer');
+            res.ontouchstart = e => { 
+                e.stopPropagation(); e.preventDefault(); isResizing=true; 
+                sx=e.touches[0].clientX; sw=target.offsetWidth; rt=sw/target.offsetHeight; 
+                document.addEventListener('touchmove', resize, {passive:false}); 
+            };
+            const resize = e => { 
+                e.preventDefault(); const nw=Math.max(30, sw+(e.touches[0].clientX-sx)); 
+                target.style.width=nw+'px'; 
+                if(isImg) target.style.height=(nw/rt)+'px'; else wrap.style.fontSize=(nw/8)+'px'; 
+            };
+            document.addEventListener('touchend', () => { isResizing=false; document.removeEventListener('touchmove', resize); });
+        }
+
+        function addTimestamp() {
+            const now = new Date();
+            const ts = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
+            addObj('note', ts);
+        }
+
+        function confirmSignature() { if(!signaturePad.isEmpty()) addObj('sig', signaturePad.toDataURL()); closeModal('sig-modal'); }
+        function addNote() { addObj('note', 'NOTA...'); }
 
         async function generatePDF() {
             if(!pdfBytes) return; const lib = await PDFLib.PDFDocument.load(pdfBytes); const pages = lib.getPages();
@@ -179,10 +219,15 @@
                 const el = document.getElementById(item.id); if(!el) continue;
                 const p = pages[item.num-1], l = document.getElementById(`layer-${item.num}`), {width, height} = p.getSize();
                 const rx = width/l.offsetWidth, ry = height/l.offsetHeight, rgb = PDFLib.rgb(parseInt(item.color.slice(1,3),16)/255, parseInt(item.color.slice(3,5),16)/255, parseInt(item.color.slice(5,7),16)/255);
-                if(item.type !== 'sig') { const fs=parseFloat(window.getComputedStyle(el.querySelector('.content')).fontSize)*rx; p.drawText(el.innerText, {x:el.offsetLeft*rx, y:height-(el.offsetTop*ry)-fs, size:fs, color:rgb}); }
-                else { const img = await lib.embedPng(item.data.split(',')[1]), i = el.querySelector('img'); p.drawImage(img, {x:el.offsetLeft*rx, y:height-(el.offsetTop*ry)-(i.offsetHeight*ry), width:i.offsetWidth*rx, height:i.offsetHeight*ry}); }
+                if(item.type !== 'sig') { 
+                    const fs=parseFloat(window.getComputedStyle(el).fontSize)*rx; 
+                    p.drawText(el.innerText, {x:el.offsetLeft*rx, y:height-(el.offsetTop*ry)-fs, size:fs, color:rgb}); 
+                } else { 
+                    const img = await lib.embedPng(item.data.split(',')[1]), i = el.querySelector('img'); 
+                    p.drawImage(img, {x:el.offsetLeft*rx, y:height-(el.offsetTop*ry)-(i.offsetHeight*ry), width:i.offsetWidth*rx, height:i.offsetHeight*ry}); 
+                }
             }
-            const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([await lib.save()],{type:"application/pdf"})); link.download = "Apex_Camo_PDF.pdf"; link.click();
+            const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([await lib.save()],{type:"application/pdf"})); link.download = "BlackOps_Final.pdf"; link.click();
         }
     </script>
 </body>
