@@ -3,44 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical PDF v9.2 - Streamlined</title>
+    <title>Tactical PDF v9.3 - Solid Frame</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
-            --camo-dark: #1a1c0e; 
-            --camo-light: #8A9A5B; 
-            --ui-bg: rgba(26, 28, 14, 0.95);
+            --camo-dark: #1a1c0e; --camo-light: #8A9A5B; --ui-bg: rgba(26, 28, 14, 0.95);
             --text-color: #8A9A5B;
             --bg-pattern: linear-gradient(45deg, #1a1c0e 25%, #2a2d1a 25%, #2a2d1a 50%, #1a1c0e 50%, #1a1c0e 75%, #2a2d1a 75%, #2a2d1a 100%);
         }
-
-        .theme-retro {
-            --camo-dark: #000000; --camo-light: #00ff41; --ui-bg: rgba(0, 0, 0, 0.98);
-            --text-color: #00ff41; --bg-pattern: radial-gradient(circle, #001a00 0%, #000000 100%);
-        }
-
-        .theme-light {
-            --camo-dark: #e0e0e0; --camo-light: #2d3436; --ui-bg: rgba(255, 255, 255, 0.95);
-            --text-color: #2d3436; --bg-pattern: none;
-        }
+        .theme-retro { --camo-dark: #000000; --camo-light: #00ff41; --ui-bg: rgba(0, 0, 0, 0.98); --text-color: #00ff41; --bg-pattern: radial-gradient(circle, #001a00 0%, #000000 100%); }
+        .theme-light { --camo-dark: #e0e0e0; --camo-light: #2d3436; --ui-bg: rgba(255, 255, 255, 0.95); --text-color: #2d3436; --bg-pattern: none; }
         
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: var(--camo-dark); background-image: var(--bg-pattern); background-size: 100px 100px;
-            color: var(--text-color); font-family: 'Courier New', monospace; overflow: hidden;
-            transition: all 0.3s ease;
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--camo-dark); background-image: var(--bg-pattern); background-size: 100px 100px; color: var(--text-color); font-family: 'Courier New', monospace; overflow: hidden; transition: 0.3s; }
 
-        #main-viewport {
-            height: calc(100% - 100px); width: 100%; 
-            overflow-y: auto; overflow-x: hidden;
-            display: flex; flex-direction: column; align-items: center;
-            padding: 10px 0 160px 0; -webkit-overflow-scrolling: touch;
-        }
-
+        #main-viewport { height: calc(100% - 100px); width: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 10px 0 160px 0; -webkit-overflow-scrolling: touch; }
         #pages-container { width: 95%; max-width: 800px; position: relative; }
         .page-wrapper { position: relative; background: white; margin-bottom: 25px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
         canvas { width: 100% !important; height: auto !important; display: block; }
@@ -48,44 +27,27 @@
         .interaction-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .interaction-layer > * { pointer-events: auto; }
 
-        #bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 100px;
-            background: var(--ui-bg); backdrop-filter: blur(15px);
-            border-top: 3px solid var(--camo-light);
-            display: flex; justify-content: space-around; align-items: center;
-            z-index: 1000; padding-bottom: env(safe-area-inset-bottom);
-        }
-
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--camo-light); font-size: 10px; min-width: 60px; }
+        #bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 100px; background: var(--ui-bg); border-top: 3px solid var(--camo-light); display: flex; justify-content: space-around; align-items: center; z-index: 1000; padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--camo-light); font-size: 10px; min-width: 60px; cursor: pointer; }
         .nav-icon { font-size: 28px; margin-bottom: 2px; }
 
-        .color-dot { width: 32px; height: 32px; border-radius: 50%; border: 1px solid white; }
+        .color-dot { width: 32px; height: 32px; border-radius: 50%; border: 1px solid white; cursor: pointer; }
         .color-dot.active { border-color: var(--camo-light); box-shadow: 0 0 10px var(--camo-light); }
 
-        #theme-selector {
-            position: fixed; left: 10px; top: 30%; 
-            display: flex; flex-direction: column; gap: 12px; z-index: 1001;
-            background: var(--ui-bg); padding: 10px; border-radius: 15px; border: 1px solid var(--camo-light);
-        }
+        #theme-selector { position: fixed; left: 10px; top: 30%; display: flex; flex-direction: column; gap: 12px; z-index: 1001; background: var(--ui-bg); padding: 10px; border-radius: 15px; border: 1px solid var(--camo-light); }
         .theme-btn { font-size: 22px; cursor: pointer; filter: grayscale(1); transition: 0.2s; }
         .theme-btn.active { filter: grayscale(0); transform: scale(1.2); }
 
-        .draggable { position: absolute; cursor: move; touch-action: none; padding: 5px; z-index: 100; }
+        .draggable { position: absolute; cursor: move; touch-action: none; padding: 5px; z-index: 100; border: 1px dashed transparent; }
         .draggable.active { border: 1px dashed var(--camo-light); background: rgba(138, 154, 91, 0.2); }
         
-        .resizer {
-            width: 35px; height: 35px; background: var(--camo-light);
-            position: absolute; right: -17px; bottom: -17px;
-            border-radius: 50%; border: 2px solid white; display: none;
-        }
+        .resizer { width: 35px; height: 35px; background: var(--camo-light); position: absolute; right: -17px; bottom: -17px; border-radius: 50%; border: 2px solid white; display: none; touch-action: none; }
         .draggable.active .resizer { display: block; }
 
-        .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 2000; padding: 20px;
-        }
-        #full-sig-pad { background: white; border-radius: 15px; width: 100%; height: 40vh; touch-action: none; }
+        /* MODALE FIRMA RIPRISTINATA */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+        .sig-container { background: white; border: 3px solid var(--camo-light); border-radius: 15px; width: 100%; max-width: 500px; height: 300px; position: relative; overflow: hidden; }
+        #full-sig-pad { background: white; width: 100%; height: 100%; touch-action: none; }
     </style>
 </head>
 <body onclick="deselectAll()">
@@ -103,23 +65,23 @@
     </div>
 
     <div id="sig-modal" class="modal" onclick="event.stopPropagation()">
-        <h2 class="mb-6 font-bold text-xl uppercase tracking-wider">Acquisizione Firma</h2>
-        <canvas id="full-sig-pad"></canvas>
+        <h2 class="mb-4 font-bold text-xl uppercase tracking-wider text-white">Firma Operativa</h2>
+        <div class="sig-container">
+            <canvas id="full-sig-pad"></canvas>
+        </div>
         <div class="flex gap-4 mt-8 w-full max-w-md">
-            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-4 rounded-2xl font-bold uppercase">Reset</button>
+            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-4 rounded-2xl font-bold uppercase text-white">Reset</button>
             <button onclick="confirmSignature()" class="flex-1 bg-white text-black font-bold py-4 rounded-2xl uppercase">Conferma</button>
         </div>
     </div>
 
     <nav id="bottom-nav" onclick="event.stopPropagation()">
         <div class="nav-item" onclick="document.getElementById('pdf-file').click()"><span class="nav-icon">📁</span><span>APRI</span></div>
-        
         <div class="flex gap-4 px-2 border-l border-r border-zinc-800">
             <div id="dot-black" class="color-dot bg-black active" onclick="setTacticalColor('#000000', 'dot-black')"></div>
             <div id="dot-red" class="color-dot bg-red-600" onclick="setTacticalColor('#cc0000', 'dot-red')"></div>
             <div id="dot-blue" class="color-dot bg-blue-700" onclick="setTacticalColor('#0000bb', 'dot-blue')"></div>
         </div>
-
         <div class="nav-item" onclick="openModal('sig-modal')"><span class="nav-icon">🖋️</span><span>FIRMA</span></div>
         <div class="nav-item" onclick="addNote()"><span class="nav-icon">📝</span><span>NOTA</span></div>
         <div class="nav-item" onclick="generatePDF()"><span class="nav-icon text-white">💾</span><span class="font-bold">SALVA</span></div>
@@ -133,16 +95,16 @@
 
         window.onload = () => {
             const canvas = document.getElementById('full-sig-pad');
-            signaturePad = new SignaturePad(canvas, { penColor: 'black', minWidth: 2.5, maxWidth: 3.5 });
-            window.addEventListener('resize', resizeSigPad);
-            resizeSigPad();
+            signaturePad = new SignaturePad(canvas, { penColor: 'black', minWidth: 2, maxWidth: 4 });
         };
 
         function resizeSigPad() {
             const canvas = document.getElementById('full-sig-pad');
-            const ratio = window.devicePixelRatio || 1;
-            canvas.width = canvas.offsetWidth * ratio; canvas.height = canvas.offsetHeight * ratio;
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear(); // Previene glitch nel tratto dopo il resize
         }
 
         function applyTheme(mode, el) {
@@ -185,19 +147,19 @@
             const id = 'el-' + Date.now();
             const wrap = document.createElement('div');
             wrap.id = id; wrap.className = 'draggable';
-            wrap.style.top = '20px'; wrap.style.left = '20px'; wrap.style.color = currentColor;
+            wrap.style.top = '100px'; wrap.style.left = '50px'; wrap.style.color = currentColor;
 
             const content = document.createElement('div');
             content.className = 'content';
             if(type === 'note') {
                 content.contentEditable = true; content.innerText = val;
-                elementsRegistry.push({ id, type, color: currentColor, pageNum: parseInt(targetLayerId.split('-')[1]) });
+                elementsRegistry.push({ id, type, color: currentColor, pageNum: 1 });
             } else {
                 const img = document.createElement('img');
                 img.src = val; img.style.width = '120px';
                 if(currentColor !== '#000000') img.style.filter = getColFilter(currentColor);
                 content.appendChild(img);
-                elementsRegistry.push({ id, type, data: val, color: currentColor, pageNum: parseInt(targetLayerId.split('-')[1]) });
+                elementsRegistry.push({ id, type, data: val, color: currentColor, pageNum: 1 });
             }
 
             wrap.appendChild(content);
@@ -229,12 +191,12 @@
             return "none";
         }
 
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'sig-modal') resizeSigPad(); }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'sig-modal') setTimeout(resizeSigPad, 50); }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function deselectAll() { if(!isResizing) document.querySelectorAll('.draggable').forEach(d => d.classList.remove('active')); }
 
-        function confirmSignature() { if(signaturePad.isEmpty()) return; createDraggable('sig', signaturePad.toDataURL(), 'layer-1'); closeModal('sig-modal'); }
-        function addNote() { createDraggable('note', 'EDITA TESTO', 'layer-1'); }
+        function confirmSignature() { if(signaturePad.isEmpty()) return; createDraggable('sig', signaturePad.toDataURL()); closeModal('sig-modal'); }
+        function addNote() { createDraggable('note', 'EDITA TESTO'); }
 
         async function generatePDF() {
             if(!pdfBytes) return;
@@ -256,7 +218,7 @@
                 }
             }
             const res = await lib.save();
-            const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([res],{type:"application/pdf"})); link.download = "Tactical_Final_v9_2.pdf"; link.click();
+            const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([res],{type:"application/pdf"})); link.download = "Tactical_V9_3.pdf"; link.click();
         }
     </script>
 </body>
