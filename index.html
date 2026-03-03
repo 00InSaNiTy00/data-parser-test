@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical PDF Editor - Full Immersive</title>
+    <title>Tactical PDF Editor - Ultra Precision</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -11,90 +11,85 @@
     <style>
         :root { 
             --camo: #4B5320; --camo-dark: #1a1c0e; --camo-light: #8A9A5B;
-            --accent: #d4d4d4;
         }
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background: var(--camo-dark); color: white; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden; /* Evita scroll della pagina intera */
+            font-family: 'Courier New', monospace; overflow: hidden;
         }
 
-        /* --- EDITOR AREA --- */
+        /* Viewport */
         #main-viewport {
-            height: calc(100% - 70px); /* Spazio per la barra in basso */
-            width: 100%; overflow: auto;
+            height: calc(100% - 75px); width: 100%; overflow: auto;
             display: flex; justify-content: center; align-items: flex-start;
-            padding: 10px; padding-bottom: 80px;
+            padding: 15px; padding-bottom: 90px;
         }
 
-        #pdf-wrapper { position: relative; background: white; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        #pdf-wrapper { position: relative; background: white; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
         #interaction-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #interaction-layer > * { pointer-events: auto; }
 
-        /* --- BOTTOM BAR --- */
+        /* Barra Navigazione */
         #bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 75px;
-            background: rgba(20, 22, 10, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 2px solid var(--camo);
+            background: rgba(15, 17, 8, 0.98); backdrop-filter: blur(15px);
+            border-top: 1px solid var(--camo-light);
             display: flex; justify-content: space-around; align-items: center;
-            z-index: 1000; padding: 0 10px;
+            z-index: 1000;
         }
 
         .nav-item {
             display: flex; flex-direction: column; align-items: center;
-            color: var(--camo-light); font-size: 10px; font-weight: bold;
-            text-transform: uppercase; cursor: pointer; transition: 0.2s;
+            color: var(--camo-light); font-size: 10px; cursor: pointer;
         }
-        .nav-item:active { transform: scale(0.9); color: white; }
-        .nav-icon { font-size: 24px; margin-bottom: 4px; }
+        .nav-item:active { transform: scale(0.9); }
+        .nav-icon { font-size: 22px; margin-bottom: 2px; }
 
-        /* --- ELEMENTI SULLO SCHERMO --- */
+        /* Elementi Draggable */
         .draggable {
             position: absolute; cursor: move; touch-action: none;
-            padding: 5px; border: 1px dashed transparent;
+            padding: 4px; border: 1px dashed transparent;
         }
         .draggable.active {
-            border: 2px dashed var(--camo-light);
-            background: rgba(255, 255, 255, 0.95); color: black; z-index: 500;
+            border: 1px dashed var(--camo-light);
+            background: rgba(138, 154, 91, 0.1); /* Sfondo leggerissimo solo per vederlo */
+            z-index: 500;
+        }
+
+        /* Note trasparenti */
+        .content-note {
+            background: transparent !important;
+            color: black;
+            outline: none;
+            min-width: 50px;
         }
 
         .resizer {
-            width: 25px; height: 25px; background: var(--camo);
-            position: absolute; right: -12px; bottom: -12px;
-            border-radius: 50%; border: 2px solid white; display: none;
+            width: 20px; height: 20px; background: var(--camo-light);
+            position: absolute; right: -10px; bottom: -10px;
+            border-radius: 50%; border: 1px solid white; display: none;
+            cursor: nwse-resize;
         }
         .draggable.active .resizer { display: block; }
 
-        .delete-badge {
-            position: absolute; top: -15px; left: -15px; background: #991b1b;
-            width: 25px; height: 25px; border-radius: 50%;
+        .delete-btn {
+            position: absolute; top: -12px; left: -12px; background: #7f1d1d;
+            width: 22px; height: 22px; border-radius: 50%;
             display: none; align-items: center; justify-content: center;
-            color: white; font-weight: bold; border: 2px solid white;
+            color: white; font-size: 12px; border: 1px solid white; cursor: pointer;
         }
-        .draggable.active .delete-badge { display: flex; }
+        .draggable.active .delete-btn { display: flex; }
 
-        /* --- MODALS --- */
+        /* Modal */
         .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
             display: none; flex-direction: column; align-items: center; justify-content: center;
             z-index: 2000; padding: 20px;
         }
-        #full-sig-pad { background: white; border-radius: 12px; width: 100%; height: 60vh; }
-
-        .camo-input {
-            background: #2a2d1a; border: 1px solid var(--camo);
-            color: white; padding: 12px; border-radius: 8px; width: 100%; margin-bottom: 15px;
-        }
+        #full-sig-pad { background: white; border-radius: 8px; width: 100%; height: 50vh; touch-action: none; }
     </style>
 </head>
 <body onclick="deselectAll()">
-
-    <div class="fixed top-0 left-0 w-full p-2 flex justify-between text-[10px] uppercase opacity-50 pointer-events-none z-50">
-        <span id="page-info">Nessun Documento</span>
-        <span>Tactical Full-Screen v3.0</span>
-    </div>
 
     <div id="main-viewport">
         <div id="pdf-wrapper">
@@ -103,49 +98,43 @@
         </div>
     </div>
 
-    <div id="settings-modal" class="modal" onclick="event.stopPropagation()">
-        <h2 class="mb-6 font-bold text-xl">DETTAGLI OPERATIVI</h2>
-        <input type="text" id="nameInput" placeholder="Nome Operatore" class="camo-input" oninput="updateBaseElements()">
-        <button onclick="closeModal('settings-modal')" class="bg-white text-black font-bold py-3 px-10 rounded-full">CONFERMA</button>
+    <div id="sig-modal" class="modal" onclick="event.stopPropagation()">
+        <h2 class="mb-4 font-bold text-[#8a9a5b]">FIRMA ULTRA-FINE</h2>
+        <canvas id="full-sig-pad"></canvas>
+        <div class="flex gap-4 mt-8 w-full max-w-md">
+            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-3 rounded text-sm">PULISCI</button>
+            <button onclick="confirmSignature()" class="flex-1 bg-[#8a9a5b] text-black font-bold py-3 rounded text-sm">CONFERMA</button>
+        </div>
     </div>
 
-    <div id="sig-modal" class="modal" onclick="event.stopPropagation()">
-        <h2 class="mb-4 font-bold text-xl">FIRMA QUI</h2>
-        <canvas id="full-sig-pad"></canvas>
-        <div class="flex gap-4 mt-8 w-full">
-            <button onclick="signaturePad.clear()" class="flex-1 border border-white py-3 rounded-xl">CLEAR</button>
-            <button onclick="confirmSignature()" class="flex-1 bg-white text-black font-bold py-3 rounded-xl">OK</button>
-        </div>
+    <div id="settings-modal" class="modal" onclick="event.stopPropagation()">
+        <h2 class="mb-6 font-bold text-[#8a9a5b]">OPERATORE</h2>
+        <input type="text" id="nameInput" placeholder="Inserisci Nome" class="w-full max-w-xs p-3 bg-zinc-900 border border-[#4b5320] rounded mb-4" oninput="updateBaseInfo()">
+        <button onclick="closeModal('settings-modal')" class="bg-white text-black font-bold py-3 px-12 rounded-full">OK</button>
     </div>
 
     <nav id="bottom-nav" onclick="event.stopPropagation()">
-        <div class="nav-item" onclick="document.getElementById('pdf-input').click()">
-            <span class="nav-icon">📂</span>
-            <span>Carica</span>
+        <div class="nav-item" onclick="document.getElementById('pdf-file').click()">
+            <span class="nav-icon">📁</span><span>CARICA</span>
         </div>
         <div class="nav-item" onclick="openModal('settings-modal')">
-            <span class="nav-icon">👤</span>
-            <span>Profilo</span>
+            <span class="nav-icon">👤</span><span>NOME</span>
         </div>
         <div class="nav-item" onclick="openModal('sig-modal')">
-            <span class="nav-icon">🖋️</span>
-            <span>Firma</span>
+            <span class="nav-icon">🖋️</span><span>FIRMA</span>
         </div>
-        <div class="nav-item" onclick="addNote()">
-            <span class="nav-icon">📝</span>
-            <span>Nota</span>
+        <div class="nav-item" onclick="addQuickNote()">
+            <span class="nav-icon">📝</span><span>NOTA</span>
         </div>
-        <div class="nav-item" onclick="changePage(1)">
-            <span class="nav-icon">📖</span>
-            <span>Pagina</span>
+        <div class="nav-item" onclick="changePage()">
+            <span class="nav-icon">📑</span><span>PAGINA</span>
         </div>
-        <div class="nav-item" onclick="generatePDF()" style="color: #8A9A5B;">
-            <span class="nav-icon">💾</span>
-            <span>Salva</span>
+        <div class="nav-item" onclick="generatePDF()">
+            <span class="nav-icon">💾</span><span class="text-white">SALVA</span>
         </div>
     </nav>
 
-    <input type="file" id="pdf-input" class="hidden" accept=".pdf">
+    <input type="file" id="pdf-file" class="hidden" accept=".pdf">
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
@@ -155,126 +144,135 @@
 
         window.onload = () => {
             const canvas = document.getElementById('full-sig-pad');
-            signaturePad = new SignaturePad(canvas, { penColor: 'black' });
-            window.addEventListener('resize', resizeSigCanvas);
-            resizeSigCanvas();
+            // TRATTO UN CENTESIMO DI MILLIMETRO (Ultra sottile)
+            signaturePad = new SignaturePad(canvas, { 
+                penColor: 'black',
+                minWidth: 0.1,
+                maxWidth: 0.1,
+                throttle: 0
+            });
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
             
-            // Crea elementi base
-            createDraggable('base-name', 'text', 'OPERATORE: ...');
-            createDraggable('base-date', 'text', 'DATA: ' + new Date().toLocaleDateString('it-IT'));
+            createDraggable('base-n', 'text', 'ID: ...');
+            createDraggable('base-d', 'text', 'DATA: ' + new Date().toLocaleDateString('it-IT'));
         };
 
-        function resizeSigCanvas() {
+        function resizeCanvas() {
             const canvas = document.getElementById('full-sig-pad');
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            const ratio = window.devicePixelRatio || 1;
             canvas.width = canvas.offsetWidth * ratio;
             canvas.height = canvas.offsetHeight * ratio;
             canvas.getContext("2d").scale(ratio, ratio);
-            signaturePad.clear();
         }
 
-        // --- CORE LOGIC ---
         function openModal(id) { 
             document.getElementById(id).style.display = 'flex'; 
-            if(id === 'sig-modal') setTimeout(resizeSigCanvas, 50);
+            if(id === 'sig-modal') setTimeout(resizeCanvas, 100);
         }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function deselectAll() { document.querySelectorAll('.draggable').forEach(d => d.classList.remove('active')); }
 
-        function deselectAll() {
-            document.querySelectorAll('.draggable').forEach(d => d.classList.remove('active'));
-        }
-
-        function updateBaseElements() {
-            const el = document.getElementById('base-name');
-            const val = document.getElementById('nameInput').value || "...";
-            if(el) el.querySelector('.content').innerText = "OPERATORE: " + val;
+        function updateBaseInfo() {
+            const el = document.getElementById('base-n');
+            if(el) el.querySelector('.content').innerText = "ID: " + (document.getElementById('nameInput').value || "...");
         }
 
         function createDraggable(id, type, val) {
             const wrap = document.createElement('div');
             wrap.id = id; wrap.className = 'draggable';
-            wrap.style.top = (id === 'base-date' ? '60px' : '20px');
+            wrap.style.top = (id === 'base-d' ? '70px' : '20px');
             wrap.style.left = '20px';
 
-            wrap.addEventListener('touchstart', (e) => { e.stopPropagation(); deselectAll(); wrap.classList.add('active'); }, {passive:true});
-            wrap.addEventListener('mousedown', (e) => { e.stopPropagation(); deselectAll(); wrap.classList.add('active'); });
+            // Eventi unificati Mouse + Touch
+            const activate = (e) => { e.stopPropagation(); deselectAll(); wrap.classList.add('active'); };
+            wrap.addEventListener('mousedown', activate);
+            wrap.addEventListener('touchstart', activate);
 
             const content = document.createElement('div');
             content.className = 'content';
+            
             if(type === 'note') {
+                content.className += ' content-note';
                 content.contentEditable = true;
-                content.style.minWidth = "100px";
-                content.style.background = "white";
-                content.style.color = "black";
-                content.style.padding = "5px";
                 notes.push({id});
             }
 
             if(type === 'sig') {
                 const img = document.createElement('img');
-                img.src = val; img.style.width = '150px'; img.style.pointerEvents = 'none';
+                img.src = val; img.style.width = '140px'; img.style.pointerEvents = 'none';
                 content.appendChild(img);
                 signatures.push({id, data: val});
             } else {
                 content.innerText = val;
-                if(type !== 'note') notes.push({id}); // Anche nome/data sono testi
+                if(type !== 'note') notes.push({id});
             }
 
             wrap.appendChild(content);
-            
-            // Controlli
             const res = document.createElement('div'); res.className = 'resizer'; wrap.appendChild(res);
-            const del = document.createElement('div'); del.innerHTML = '×'; del.className = 'delete-badge';
-            del.onclick = () => wrap.remove();
+            const del = document.createElement('div'); del.innerHTML = '×'; del.className = 'delete-btn';
+            del.onclick = () => { wrap.remove(); };
             if(!id.includes('base-')) wrap.appendChild(del);
 
             document.getElementById('interaction-layer').appendChild(wrap);
-            initDrag(wrap);
-            initResize(wrap, (type === 'sig' ? content.querySelector('img') : content), type === 'sig');
+            setupInteractions(wrap, (type === 'sig' ? content.querySelector('img') : content), type === 'sig');
         }
 
-        // --- DRAG & RESIZE (MOBILE OPTIMIZED) ---
-        function initDrag(el) {
-            let startX, startY, initX, initY;
-            const move = (e) => {
+        // --- SISTEMA DRAG & RESIZE UNIFICATO (Desktop + Mobile) ---
+        function setupInteractions(el, target, isImg) {
+            let startX, startY, initX, initY, startW, startH, ratio;
+
+            // DRAG
+            const onMove = (e) => {
                 const ev = e.touches ? e.touches[0] : e;
                 el.style.left = (initX + (ev.clientX - startX)) + 'px';
                 el.style.top = (initY + (ev.clientY - startY)) + 'px';
             };
-            const start = (e) => {
-                if (e.target.className === 'resizer' || e.target.contentEditable === "true") return;
-                const ev = e.touches ? e.touches[0] : e;
+            const onEnd = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('touchmove', onMove);
+            };
+            el.addEventListener('mousedown', (e) => {
+                if(e.target.className === 'resizer' || e.target.contentEditable === "true") return;
+                startX = e.clientX; startY = e.clientY;
+                initX = el.offsetLeft; initY = el.offsetTop;
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onEnd);
+            });
+            el.addEventListener('touchstart', (e) => {
+                if(e.target.className === 'resizer' || e.target.contentEditable === "true") return;
+                const ev = e.touches[0];
                 startX = ev.clientX; startY = ev.clientY;
                 initX = el.offsetLeft; initY = el.offsetTop;
-                document.addEventListener('mousemove', move);
-                document.addEventListener('touchmove', move, {passive:false});
-                document.addEventListener('mouseup', end); document.addEventListener('touchend', end);
-            };
-            const end = () => { document.removeEventListener('mousemove', move); document.removeEventListener('touchmove', move); };
-            el.addEventListener('mousedown', start); el.addEventListener('touchstart', start, {passive:false});
-        }
+                document.addEventListener('touchmove', onMove, {passive:false});
+                document.addEventListener('touchend', onEnd);
+            });
 
-        function initResize(wrap, target, isImg) {
-            const res = wrap.querySelector('.resizer');
-            const move = (e) => {
+            // RESIZE
+            const res = el.querySelector('.resizer');
+            const onResizeMove = (e) => {
                 const ev = e.touches ? e.touches[0] : e;
-                const newW = Math.max(40, startW + (ev.clientX - startX));
+                const newW = Math.max(30, startW + (ev.clientX - startX));
                 target.style.width = newW + 'px';
                 if(isImg) target.style.height = (newW / ratio) + 'px';
-                else wrap.style.fontSize = (newW / 12) + 'px';
+                else el.style.fontSize = (newW / 12) + 'px';
             };
-            let startX, startW, startH, ratio;
-            res.addEventListener('touchstart', (e) => {
+            const onResizeStart = (e) => {
                 e.stopPropagation(); e.preventDefault();
-                const ev = e.touches[0];
-                startX = ev.clientX; startW = target.offsetWidth; startH = target.offsetHeight; ratio = startW/startH;
-                document.addEventListener('touchmove', move, {passive:false});
-            });
-            document.addEventListener('touchend', () => document.removeEventListener('touchmove', move));
+                const ev = e.touches ? e.touches[0] : e;
+                startX = ev.clientX; startW = target.offsetWidth;
+                startH = target.offsetHeight; ratio = startW / startH;
+                document.addEventListener('mousemove', onResizeMove);
+                document.addEventListener('touchmove', onResizeMove, {passive:false});
+                document.addEventListener('mouseup', () => { document.removeEventListener('mousemove', onResizeMove); });
+                document.addEventListener('touchend', () => { document.removeEventListener('touchmove', onResizeMove); });
+            };
+            res.addEventListener('mousedown', onResizeStart);
+            res.addEventListener('touchstart', onResizeStart);
         }
 
-        // --- PDF ENGINE ---
-        document.getElementById('pdf-input').onchange = async (e) => {
+        // PDF Engine
+        document.getElementById('pdf-file').onchange = async (e) => {
             const file = e.target.files[0];
             pdfBytes = new Uint8Array(await file.arrayBuffer());
             pdfDoc = await pdfjsLib.getDocument({data: pdfBytes.slice(0)}).promise;
@@ -285,19 +283,18 @@
         async function renderPage(num) {
             currentPage = num;
             const page = await pdfDoc.getPage(num);
-            const vp = page.getViewport({ scale: (window.innerWidth < 600 ? 0.8 : 1.3) });
+            const scale = window.innerWidth < 600 ? 0.8 : 1.3;
+            const vp = page.getViewport({ scale });
             const canvas = document.getElementById('pdf-canvas');
             canvas.width = vp.width; canvas.height = vp.height;
             document.getElementById('pdf-wrapper').style.width = vp.width + "px";
             await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-            document.getElementById('page-info').innerText = `PAGINA ${num} DI ${totalPages}`;
         }
 
         function changePage() {
             if(!pdfDoc) return;
-            let n = currentPage + 1;
-            if (n > totalPages) n = 1;
-            renderPage(n);
+            currentPage = (currentPage >= totalPages) ? 1 : currentPage + 1;
+            renderPage(currentPage);
         }
 
         function confirmSignature() {
@@ -305,18 +302,17 @@
             createDraggable('sig-'+Date.now(), 'sig', signaturePad.toDataURL());
             closeModal('sig-modal');
         }
-        function addNote() { createDraggable('note-'+Date.now(), 'note', 'Inserisci testo...'); }
+        function addQuickNote() { createDraggable('note-'+Date.now(), 'note', 'Scrivi qui...'); }
 
         async function generatePDF() {
-            if (!pdfBytes) return alert("Carica un PDF!");
+            if(!pdfBytes) return alert("Carica un PDF!");
             const lib = await PDFLib.PDFDocument.load(pdfBytes.slice(0));
             const page = lib.getPages()[currentPage - 1];
             const { width, height } = page.getSize();
             const layer = document.getElementById('interaction-layer');
             const sx = width / layer.offsetWidth, sy = height / layer.offsetHeight;
 
-            // Testi
-            for (let n of notes) {
+            for(let n of notes) {
                 const el = document.getElementById(n.id);
                 if(el) {
                     const c = el.querySelector('.content');
@@ -324,8 +320,7 @@
                     page.drawText(c.innerText.trim(), { x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - fs, size: fs });
                 }
             }
-            // Firme
-            for (let s of signatures) {
+            for(let s of signatures) {
                 const el = document.getElementById(s.id);
                 if(el) {
                     const img = await lib.embedPng(s.data.split(',')[1]);
@@ -335,8 +330,8 @@
             }
             const res = await lib.save();
             const link = document.createElement('a');
-            link.href = URL.createObjectURL(new Blob([res], {type: "application/pdf"}));
-            link.download = "Tactical_Final.pdf"; link.click();
+            link.href = URL.createObjectURL(new Blob([res], {type:"application/pdf"}));
+            link.download = "Documento_Tattico_Precision.pdf"; link.click();
         }
     </script>
 </body>
