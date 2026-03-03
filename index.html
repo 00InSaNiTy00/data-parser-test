@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Tactical Signer - Elite Edition</title>
+    <title>PDF Tactical Signer - Elite Custom Edition</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -13,7 +13,7 @@
             --camo-dark: #2E3317; --camo-green: #4B5320; --camo-light: #8A9A5B;
             --bg-color: #1a1c0e; --text-color: #e2e8f0; --panel-bg: #2a2d1a;
         }
-        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Courier New', Courier, monospace; transition: all 0.3s ease; overflow-x: hidden; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: 'Courier New', Courier, monospace; transition: all 0.3s ease; }
         
         #preview-container {
             position: relative; width: 100%; min-height: 80vh;
@@ -22,21 +22,29 @@
         }
 
         #pdf-wrapper { position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.7); background: white; }
-        #interaction-layer { position: absolute; top: 0; left: 0; z-index: 2; width: 100%; height: 100%; }
+        #interaction-layer { position: absolute; top: 0; left: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
+        #interaction-layer > * { pointer-events: auto; }
 
+        /* Elemento Draggable potenziato */
         .draggable {
             position: absolute; cursor: move; user-select: none; touch-action: none;
             padding: 4px; border: 2px dashed var(--camo-green);
-            background: rgba(255, 255, 255, 0.9); color: #000; border-radius: 4px;
+            background: rgba(255, 255, 255, 0.8); color: #000; border-radius: 4px;
+            min-width: 30px; min-height: 30px;
         }
 
-        .text-box { background: rgba(255,255,255,0.9); border: 1px solid var(--camo-green); min-width: 100px; outline: none; padding: 5px; }
+        /* Maniglia per il ridimensionamento */
+        .resizer {
+            width: 12px; height: 12px; background: var(--camo-green);
+            position: absolute; right: -6px; bottom: -6px;
+            cursor: nwse-resize; border-radius: 2px; border: 1px solid white;
+        }
 
-        .camo-input { background: rgba(0,0,0,0.3); border: 2px solid var(--camo-green); color: inherit; padding: 8px; border-radius: 5px; width: 100%; }
+        .text-box { min-width: 100px; outline: none; padding: 5px; font-size: 16px; overflow: hidden; }
+
         .camo-btn { background: var(--camo-green); color: white; font-weight: bold; padding: 10px; border-radius: 8px; transition: 0.3s; text-transform: uppercase; border: 1px solid var(--camo-light); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .camo-btn:hover { background: var(--camo-light); }
         
-        /* Modal Firma Full Screen */
         #sig-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 100; display: none;
@@ -45,10 +53,10 @@
         #full-sig-pad { background: white; border-radius: 8px; width: 90vw; height: 60vh; }
 
         .delete-btn {
-            position: absolute; top: -12px; right: -12px; background: #991b1b; 
-            color: white; border-radius: 50%; width: 22px; height: 22px; 
-            font-size: 14px; display: flex; align-items: center; justify-content: center;
-            border: 2px solid white; cursor: pointer; z-index: 10;
+            position: absolute; top: -12px; right: 12px; background: #991b1b; 
+            color: white; border-radius: 50%; width: 20px; height: 20px; 
+            font-size: 12px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid white; cursor: pointer;
         }
 
         .theme-night { --bg-color: #000a00; --text-color: #00ff00; --camo-green: #00ff00; --panel-bg: #001500; }
@@ -58,42 +66,26 @@
 <body class="p-4">
 
     <div id="sig-modal">
-        <h2 class="text-[#8a9a5b] font-bold mb-4 uppercase tracking-widest">Acquisizione Firma Digitale</h2>
+        <h2 class="text-[#8a9a5b] font-bold mb-4 uppercase">Acquisizione Firma</h2>
         <canvas id="full-sig-pad"></canvas>
         <div class="flex gap-4 mt-6 w-full max-w-2xl">
-            <button onclick="closeSigModal()" class="camo-btn bg-gray-700 w-1/3">Annulla</button>
-            <button onclick="clearFullPad()" class="camo-btn bg-red-900 w-1/3">Pulisci</button>
-            <button onclick="confirmSignature()" class="camo-btn w-1/3">Conferma Firma</button>
+            <button onclick="closeSigModal()" class="camo-btn bg-gray-700 w-1/3">Esci</button>
+            <button onclick="clearFullPad()" class="camo-btn bg-red-900 w-1/3">Clear</button>
+            <button onclick="confirmSignature()" class="camo-btn w-1/3">Conferma</button>
         </div>
     </div>
 
     <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div class="lg:col-span-1 p-5 rounded-2xl border border-[#4b5320] space-y-6 shadow-2xl" style="background-color: var(--panel-bg);">
-            <h2 class="text-lg font-bold border-b border-[#4b5320] pb-2 text-center uppercase">🛠️ Tactical Ops</h2>
+            <h2 class="text-lg font-bold border-b border-[#4b5320] pb-2 text-center uppercase">🛠️ Tactical Elite</h2>
             
-            <div class="space-y-4">
-                <button onclick="openSigModal()" class="w-full camo-btn bg-[#8a9a5b] hover:bg-green-700 py-4">
-                    🖋️ APRI PAD FIRMA
-                </button>
-                <button onclick="addFreeText()" class="w-full camo-btn">
-                    ⌨️ AGGIUNGI NOTA TESTO
-                </button>
-            </div>
+            <button onclick="openSigModal()" class="w-full camo-btn bg-[#8a9a5b] py-4">🖋️ NUOVA FIRMA</button>
+            <button onclick="addFreeText()" class="w-full camo-btn">⌨️ AGGIUNGI NOTA</button>
 
             <div class="space-y-1 pt-4 border-t border-[#4b5320]">
-                <label class="text-[10px] uppercase font-bold opacity-70">Identificativo Operatore</label>
-                <input type="text" id="nameInput" placeholder="Nome" class="camo-input bg-white text-black" oninput="updatePreviewText()">
-            </div>
-            
-            <div class="space-y-1">
-                <label class="text-[10px] uppercase font-bold opacity-70">Calibrazione Dimensione</label>
-                <input type="range" id="sizeSlider" min="10" max="150" value="50" class="w-full accent-[#8a9a5b]" oninput="updateSize()">
-            </div>
-
-            <div class="space-y-1">
-                <label class="text-[10px] uppercase font-bold opacity-70">Visuale</label>
+                <label class="text-[10px] uppercase font-bold opacity-70">Visuale Operativa</label>
                 <div class="grid grid-cols-3 gap-1">
-                    <button onclick="setTheme('camo')" class="text-[9px] bg-[#4B5320] text-white p-1 rounded">CAMO</button>
+                    <button onclick="setTheme('camo')" class="text-[9px] bg-[#4B5320] p-1 rounded">CAMO</button>
                     <button onclick="setTheme('night')" class="text-[9px] bg-black text-green-500 p-1 rounded">NIGHT</button>
                     <button onclick="setTheme('light')" class="text-[9px] bg-white text-black p-1 rounded">LIGHT</button>
                 </div>
@@ -106,24 +98,19 @@
             </div>
 
             <input type="file" id="pdfInput" accept=".pdf" class="hidden">
-            <button onclick="document.getElementById('pdfInput').click()" class="w-full camo-btn bg-gray-600">📂 CARICA PDF</button>
+            <button onclick="document.getElementById('pdfInput').click()" class="w-full camo-btn bg-gray-600">📂 CARICA FILE</button>
             
-            <button onclick="generatePDF()" class="w-full camo-btn py-4 text-sm tracking-widest bg-[#4B5320]">
-                💾 FINALIZZA & SCARICA
-            </button>
+            <button onclick="generatePDF()" class="w-full camo-btn py-4 bg-[#4B5320]">💾 SALVA PDF FINALE</button>
             <p id="status" class="text-center text-[10px] font-bold animate-pulse"></p>
         </div>
 
         <div class="lg:col-span-3">
-            <div id="preview-container" class="rounded-xl shadow-inner">
+            <div id="preview-container">
                 <div id="pdf-wrapper">
                     <canvas id="pdf-render-canvas"></canvas>
                     <div id="interaction-layer">
                         <div id="drag-name" class="draggable text-xs" style="top: 20px; left: 20px;">
                             <span class="opacity-30 text-[9px]">ID:</span> <span id="val-name" class="font-bold">...</span>
-                        </div>
-                        <div id="drag-date" class="draggable text-xs" style="top: 70px; left: 20px;">
-                            <span class="opacity-30 text-[9px]">DATA:</span> <span id="val-date" class="font-bold"></span>
                         </div>
                     </div>
                 </div>
@@ -134,80 +121,120 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        let fullSignaturePad;
-        let signaturesList = [];
-        let textNotesList = []; // Lista per i testi liberi
+        let fullSignaturePad, signaturesList = [], textNotesList = [];
         let pdfDoc = null, currentPage = 1, totalPages = 0, pdfDataArray = null;
 
-        document.getElementById('val-date').innerText = new Date().toLocaleDateString('it-IT');
-
-        // Setup Full Screen Pad
         const fullCanvas = document.getElementById('full-sig-pad');
         fullSignaturePad = new SignaturePad(fullCanvas, { penColor: 'navy' });
 
         function openSigModal() {
             document.getElementById('sig-modal').style.display = 'flex';
-            // Resize canvas to match display size
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            const ratio = window.devicePixelRatio || 1;
             fullCanvas.width = fullCanvas.offsetWidth * ratio;
             fullCanvas.height = fullCanvas.offsetHeight * ratio;
             fullCanvas.getContext("2d").scale(ratio, ratio);
             fullSignaturePad.clear();
         }
-
         function closeSigModal() { document.getElementById('sig-modal').style.display = 'none'; }
         function clearFullPad() { fullSignaturePad.clear(); }
 
         function confirmSignature() {
-            if (fullSignaturePad.isEmpty()) return alert("Firma mancante!");
+            if (fullSignaturePad.isEmpty()) return;
             const data = fullSignaturePad.toDataURL();
             const id = 'sig-' + Date.now();
-            
-            const wrap = document.createElement('div');
-            wrap.id = id;
-            wrap.className = 'draggable';
-            wrap.style.top = '150px'; wrap.style.left = '50px';
-            wrap.style.background = 'transparent';
-
-            const img = document.createElement('img');
-            img.src = data;
-            img.style.width = (document.getElementById('sizeSlider').value * 2) + "px";
-            img.className = 'sig-img';
-
-            const del = document.createElement('div');
-            del.innerHTML = '×'; del.className = 'delete-btn';
-            del.onclick = () => { wrap.remove(); signaturesList = signaturesList.filter(s => s.id !== id); };
-
-            wrap.appendChild(img); wrap.appendChild(del);
-            document.getElementById('interaction-layer').appendChild(wrap);
-            makeDraggable(wrap);
-            signaturesList.push({ id, data });
+            createDraggableElement(id, 'sig', data);
             closeSigModal();
         }
 
-        // --- NUOVA FUNZIONE AGGIUNTA TESTO ---
         function addFreeText() {
             const id = 'txt-' + Date.now();
-            const wrap = document.createElement('div');
-            wrap.id = id;
-            wrap.className = 'draggable text-box';
-            wrap.contentEditable = true;
-            wrap.innerText = "Nuova Nota...";
-            wrap.style.top = '200px'; wrap.style.left = '50px';
-
-            const del = document.createElement('div');
-            del.innerHTML = '×'; del.className = 'delete-btn';
-            del.contentEditable = false;
-            del.onclick = () => { wrap.remove(); textNotesList = textNotesList.filter(t => t.id !== id); };
-
-            wrap.appendChild(del);
-            document.getElementById('interaction-layer').appendChild(wrap);
-            makeDraggable(wrap);
-            textNotesList.push({ id });
-            wrap.focus();
+            createDraggableElement(id, 'txt');
         }
 
-        // Logica PDF e Caricamento
+        // --- CORE: CREAZIONE ELEMENTO CON RESIZE INDIVIDUALE ---
+        function createDraggableElement(id, type, data = null) {
+            const wrap = document.createElement('div');
+            wrap.id = id;
+            wrap.className = 'draggable';
+            wrap.style.top = '100px'; wrap.style.left = '50px';
+
+            // Pulsante Elimina
+            const del = document.createElement('div');
+            del.innerHTML = '×'; del.className = 'delete-btn';
+            del.onclick = () => { 
+                wrap.remove(); 
+                signaturesList = signaturesList.filter(s => s.id !== id);
+                textNotesList = textNotesList.filter(t => t.id !== id);
+            };
+            wrap.appendChild(del);
+
+            // Maniglia Ridimensionamento
+            const resizer = document.createElement('div');
+            resizer.className = 'resizer';
+            wrap.appendChild(resizer);
+
+            if (type === 'sig') {
+                const img = document.createElement('img');
+                img.src = data;
+                img.style.width = '150px'; // Dimensione iniziale
+                img.style.pointerEvents = 'none';
+                wrap.appendChild(img);
+                signaturesList.push({ id, data });
+                initResize(wrap, img, true); // True = mantiene proporzioni
+            } else {
+                wrap.classList.add('text-box');
+                wrap.contentEditable = true;
+                wrap.innerText = "Scrivi qui...";
+                wrap.style.width = '200px';
+                textNotesList.push({ id });
+                initResize(wrap, null, false);
+            }
+
+            document.getElementById('interaction-layer').appendChild(wrap);
+            makeDraggable(wrap);
+        }
+
+        // --- LOGICA DI RESIZE ---
+        function initResize(element, content, keepRatio) {
+            const resizer = element.querySelector('.resizer');
+            resizer.addEventListener('mousedown', initDrag, false);
+            resizer.addEventListener('touchstart', initDrag, false);
+
+            function initDrag(e) {
+                e.stopPropagation(); e.preventDefault();
+                const startX = e.touches ? e.touches[0].clientX : e.clientX;
+                const startWidth = parseInt(document.defaultView.getComputedStyle(content || element).width, 10);
+                const startHeight = parseInt(document.defaultView.getComputedStyle(content || element).height, 10);
+                const aspectRatio = startWidth / startHeight;
+
+                function doDrag(e) {
+                    const currentX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const newWidth = startWidth + (currentX - startX);
+                    
+                    if (content) { // Per le firme (img)
+                        content.style.width = newWidth + 'px';
+                        if (keepRatio) content.style.height = (newWidth / aspectRatio) + 'px';
+                    } else { // Per le note di testo
+                        element.style.width = newWidth + 'px';
+                        element.style.fontSize = (newWidth / 10) + 'px'; // Scala il font col box
+                    }
+                }
+
+                function stopDrag() {
+                    window.removeEventListener('mousemove', doDrag);
+                    window.removeEventListener('mouseup', stopDrag);
+                    window.removeEventListener('touchmove', doDrag);
+                    window.removeEventListener('touchend', stopDrag);
+                }
+
+                window.addEventListener('mousemove', doDrag, false);
+                window.addEventListener('mouseup', stopDrag, false);
+                window.addEventListener('touchmove', doDrag, false);
+                window.addEventListener('touchend', stopDrag, false);
+            }
+        }
+
+        // Caricamento PDF (Logica standard protetta)
         document.getElementById('pdfInput').onchange = async function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -237,19 +264,10 @@
             if (n >= 1 && n <= totalPages) { currentPage = n; renderPage(n); }
         }
 
-        function updatePreviewText() { document.getElementById('val-name').innerText = document.getElementById('nameInput').value || "..."; }
-        function updateSize() {
-            const s = document.getElementById('sizeSlider').value;
-            document.getElementById('drag-name').style.fontSize = (s/4) + "px";
-            document.getElementById('drag-date').style.fontSize = (s/4) + "px";
-            document.querySelectorAll('.sig-img').forEach(i => i.style.width = (s*2) + "px");
-            document.querySelectorAll('.text-box').forEach(i => i.style.fontSize = (s/4) + "px");
-        }
-
         function makeDraggable(el) {
             let px = 0, py = 0, mx = 0, my = 0;
             el.onmousedown = el.ontouchstart = function(e) {
-                if (e.target.className === 'delete-btn') return;
+                if (e.target.className === 'resizer' || e.target.className === 'delete-btn') return;
                 const ev = e.touches ? e.touches[0] : e;
                 mx = ev.clientX; my = ev.clientY;
                 document.onmouseup = document.ontouchend = () => { document.onmousemove = document.ontouchmove = null; };
@@ -262,21 +280,18 @@
                 };
             };
         }
-
         makeDraggable(document.getElementById("drag-name"));
-        makeDraggable(document.getElementById("drag-date"));
 
         function setTheme(t) {
             document.body.className = "p-4 " + (t === 'camo' ? '' : 'theme-' + t);
             const c = document.getElementById('preview-container');
-            c.style.background = t === 'night' ? "radial-gradient(circle, #001a00 0%, #000 100%)" : (t === 'light' ? "#d1d5db" : "var(--camo-dark)");
+            c.style.background = t === 'night' ? "black" : (t === 'light' ? "#ccc" : "var(--camo-dark)");
         }
 
-        // --- GENERAZIONE FINALE CON TESTO E FIRME ---
+        // --- SALVATAGGIO PDF ---
         async function generatePDF() {
             if (!pdfDataArray) return alert("Carica un PDF!");
-            const st = document.getElementById('status');
-            st.innerText = "OPERAZIONE IN CORSO...";
+            document.getElementById('status').innerText = "ESPORTAZIONE...";
 
             try {
                 const lib = await PDFLib.PDFDocument.load(pdfDataArray.slice(0));
@@ -285,41 +300,46 @@
                 const { width, height } = page.getSize();
                 const layer = document.getElementById('interaction-layer');
                 const sx = width / layer.offsetWidth, sy = height / layer.offsetHeight;
-                const sizeBase = document.getElementById('sizeSlider').value;
 
-                // Inserimento ID e DATA
-                const fixed = [{id:'drag-name', v:document.getElementById('val-name').innerText}, {id:'drag-date', v:document.getElementById('val-date').innerText}];
-                fixed.forEach(f => {
-                    const el = document.getElementById(f.id);
-                    page.drawText(f.v, { x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - ((sizeBase/4) * sy), size: (sizeBase/4) * sx, color: PDFLib.rgb(0,0,0.4)});
-                });
-
-                // Inserimento Testi Liberi
-                textNotesList.forEach(t => {
+                // Testi Liberi
+                for (let t of textNotesList) {
                     const el = document.getElementById(t.id);
                     if(el) {
                         const txt = el.innerText.replace('×', '').trim();
-                        page.drawText(txt, { x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - ((sizeBase/4) * sy), size: (sizeBase/4) * sx, color: PDFLib.rgb(0,0,0)});
+                        const fSize = parseFloat(window.getComputedStyle(el).fontSize) * sx;
+                        page.drawText(txt, { 
+                            x: el.offsetLeft * sx, 
+                            y: height - (el.offsetTop * sy) - fSize, 
+                            size: fSize, 
+                            color: PDFLib.rgb(0,0,0)
+                        });
                     }
-                });
+                }
 
-                // Inserimento Firme
+                // Firme
                 for (let s of signaturesList) {
                     const el = document.getElementById(s.id);
                     if(el) {
                         const img = await lib.embedPng(s.data.split(',')[1]);
-                        const iEl = el.querySelector('img');
-                        page.drawImage(img, { x: el.offsetLeft * sx, y: height - (el.offsetTop * sy) - (iEl.offsetHeight * sy), width: iEl.offsetWidth * sx, height: iEl.offsetHeight * sy });
+                        const imgEl = el.querySelector('img');
+                        const finalW = imgEl.offsetWidth * sx;
+                        const finalH = imgEl.offsetHeight * sy;
+                        page.drawImage(img, { 
+                            x: el.offsetLeft * sx, 
+                            y: height - (el.offsetTop * sy) - finalH, 
+                            width: finalW, 
+                            height: finalH 
+                        });
                     }
                 }
 
                 const res = await lib.save();
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(new Blob([res], {type:"application/pdf"}));
-                link.download = `Tactical_Final_${Date.now()}.pdf`;
+                link.download = `Tactical_Elite_${Date.now()}.pdf`;
                 link.click();
-                st.innerText = "MISSIONE COMPIUTA.";
-            } catch (err) { console.error(err); st.innerText = "ERRORE!"; }
+                document.getElementById('status').innerText = "FATTO.";
+            } catch (err) { console.error(err); }
         }
     </script>
 </body>
