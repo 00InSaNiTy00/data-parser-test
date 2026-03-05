@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pathfinder Sentinel v23.0</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --bg: #0f1108; --accent: #8A9A5B; --text: #d1d6b8; }
+        body { 
+            background-color: var(--bg); color: var(--text); 
+            font-family: 'Courier New', monospace; min-height: 100vh;
+            background-image: repeating-linear-gradient(45deg, #0f1108, #0f1108 15px, #14160c 15px, #14160c 30px);
+        }
+        .status-bar { border: 2px solid var(--accent); background: rgba(0,0,0,0.95); box-shadow: 0 0 20px rgba(138,154,91,0.2); }
+        .target-card { 
+            background: rgba(138, 154, 91, 0.08); border-left: 6px solid var(--accent); 
+            margin-bottom: 16px; padding: 20px; position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+        }
+        .highlight { border-left-color: #ffaa00; background: rgba(255, 170, 0, 0.1); }
+        .base-node { border-left-color: #ffffff; background: rgba(255,255,255,0.05); }
+        .loader { border-top-color: var(--accent); animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .editable-addr { 
+            outline: none; 
+            border-bottom: 1px dashed rgba(138, 154, 91, 0.5); 
+            padding-bottom: 2px; 
+            transition: all 0.2s;
+        }
+        .editable-addr:focus { 
+            border-bottom: 1px solid var(--accent); 
+            color: #ffffff; 
+            background: rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="p-4 pb-56">
+
+    <div class="mb-6 text-center">
+        <h1 class="text-4xl font-black tracking-tighter uppercase italic text-[#8A9A5B] drop-shadow-md">Pathfinder</h1>
+        <div class="text-[11px] font-bold opacity-70 tracking-[0.4em] mt-1">V23.0 - PROTOCOLLO ERASER</div>
+    </div>
+
+    <div class="status-bar p-6 rounded-lg mb-8 text-center border-dashed">
+        <input type="file" id="screenshot-input" accept="image/*" class="hidden">
+        <button onclick="document.getElementById('screenshot-input').click()" class="bg-[#8A9A5B] text-[#0f1108] px-6 py-6 font-black rounded uppercase w-full active:scale-95 transition-all text-2xl shadow-2xl tracking-widest border-b-4 border-[#5d6837]">
+            ⚡ SCANSIONE MISSIONE ⚡
+        </button>
+    </div>
+
+    <div id="loading-overlay" class="hidden flex flex-col items-center justify-center p-12 bg-black/95 rounded-xl border border-[#8A9A5B] mb-6 shadow-2xl z-50 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4">
+        <div class="loader rounded-full border-4 border-gray-800 h-16 w-16 mb-6"></div>
+        <div class="text-sm font-black uppercase animate-pulse tracking-widest text-center">
+            ELABORAZIONE TATTICA...<br>
+            <span class="text-[9px] opacity-60 text-[#8A9A5B]">RIMOZIONE RUMORE TABELLARE</span>
+        </div>
+    </div>
+
+    <div id="results-area" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+            <div class="text-[10px] opacity-70 uppercase tracking-widest text-[#8A9A5B]">Tap sul testo per correggere</div>
+            <button onclick="generatePDF()" class="bg-gray-800 text-[#8A9A5B] border border-[#8A9A5B] px-3 py-2 rounded text-[10px] font-black uppercase tracking-wider hover:bg-[#8A9A5B] hover:text-[#0f1108] transition-colors shadow-lg">
+                ⬇ Esporta PDF
+            </button>
+        </div>
+        <div id="address-list" class="space-y-4"></div>
+    </div>
+
+    <nav class="fixed bottom-0 left-0 w-full p-4 bg-[#0f1108]/98 border-t-2 border-[#8A9A5B] flex flex-col gap-3 z-40">
+        <div class="flex gap-3">
+            <button onclick="location.reload()" class="px-5 border border-[#8A9A5B] rounded uppercase text-xs font-black text-[#8A9A5B] hover:bg-[#8A9A5B] hover:text-[#0f1108] transition-colors">Reset</button>
+            <button onclick="openMaps()" class="flex-1 bg-[#8A9A5B] text-[#0f1108] py-5 font-black uppercase text-lg rounded shadow-2xl active:translate-y-2 transition-all border-b-4 border-[#5d6837]">
+                AVVIA NAVIGATORE
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        // Lista JUNK potenziata massicciamente con i termini delle tue tabelle
+        const JUNK_WORDS = "RICHIEDENTE|DESCRIZIONE|EFFETTUATA|PROBLEMI|MONITOR|TASTIERA|SPEDITO|LENOVO|PORTATILE|UPS|TNT|MB2|C-920|STU-520|ZT611|SNC|TICKET|PLOTTER|PRT|MPS|AE221|ASUS|CONTABANCONOTE|PC|DESKTOP|BATTERIA|SOSTITUZIONE|GUASTO|RITIRO|CONSEGNA|APPUNTAMENTO|TELEFONO|CELLULARE|CLIENTE|REFERENTE|PIANO|SCALA|INTERNO|CITOFONO|ATTENZIONE|URGENTE|DIFETTO|ALIMENTATORE|CAVO|MOUSE|RAM|SCHEDA|MADRE|VIDEO|HARD|DISK|SSD|INSTALLAZIONE|CONFIGURAZIONE|STAMPANTE|TONER|RIFORNIMENTO|MULETTO|SPORTELLO|POSTAZIONE|UFFICIO|MAGAZZINO|REPARTO|DIRIGENTE|RESPONSABILE|ASSISTENZA|TECNICO|INTERVENTO|GARANZIA|S30|GBR|FIELD|CENTRO-NORD|POLO|ISSUE|WLAN|PAPER|JAM|SENSOR|SEPARATOR|PICK|ASSY|KIT|SERVICE|STATION|INKS|ADF|GSO|REDI|WIFI|INCH|SN|DW|POSTE|GENERICO|BREVE|ACCENDE|NON|SI|RIMANE|NERO|COLLEGAMENTO|DIFETTOSO|WKO|C1\\.1|NOK|IL|SU|PULIZIA|CAMBIO|INCHIOSTRO|MESSAGGIO|ERRORE|BOURRAGE|COGNOME|LUCA|ELEFONO|RICHIEDE|RIPARAZIONE|DELLA|ALEX|DUMITRU|TEL|INFO|INFORTECHSRLS|COM|BICI";
+
+        const CONFIG = {
+            HOME: "Via Nicola Calipari 299 Crevalcore BO",
+            COLOMBO: "Via Cristoforo Colombo 59 Bologna BO",
+            MEDICINA: "Via Rosle 643 Medicina BO",
+            SAVIGNO: "Via Savigno 5/B Bologna BO"
+        };
+
+        let route = [];
+
+        document.getElementById('screenshot-input').onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            
+            try {
+                const worker = await Tesseract.createWorker('ita', 1, { logger: () => {} });
+                const { data: { text } } = await worker.recognize(file);
+                await worker.terminate();
+                processSentinel(text);
+            } catch (err) {
+                console.error(err);
+                alert("Anomalia nel sensore ottico.");
+            } finally {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }
+        };
+
+        function processSentinel(rawText) {
+            const hasSavigno = /SAVIGNO|SAVIGN/i.test(rawText);
+            const hasPoste = /POSTE|PT[0-9]|TICKET|CONTABANCONOTE/i.test(rawText);
+
+            // 1. Pre-Piallatura
+            let flatText = rawText
+                .replace(/[\n\r|\[\]_]/g, ' ') 
+                .toUpperCase()
+                .replace(/TNT\s+B[O0]/g, ' ') // Disinnesco bomba colonna sinistra
+                .replace(/PORTA\s+B[O0]\s*LOGNA/g, 'PORTA BOLOGNA')
+                .replace(/\bB[0O]\b/g, 'BO') 
+                .replace(/\bF E\b/g, 'FE')
+                .replace(/\bM[0O]\b/g, 'MO')
+                .replace(/\bVLA\b/g, 'VIA')
+                .replace(/\bVI A\b/g, 'VIA')
+                .replace(/(\d{5})([A-Z]{2})\b/g, '$1 $2')
+                .replace(/\s+/g, ' ');
+
+            // 2. Divisione dei Blocchi
+            const startWords = /(?=\b(?:PIAZZALE|PIAZZA|VIA|CORSO|VIALE|STRADA|V\.LE|P\.ZZA|P\.ZA|C\.SO|P\.LE|PZ\.ZA|LUNGOMARE|VICOLO|BORGO|LOC\.|LOCALIT[AÀ]|FRAZ\.|FRAZIONE)\b)/;
+            let chunks = flatText.split(startWords);
+
+            let addresses = [];
+            const junkRegex = new RegExp(`\\b(${JUNK_WORDS})\\b`, 'gi');
+            
+            // Il cuore dell'Eraser: individua i seriali per CANCELLARLI, non per tagliare
+            const serialsRegex = /\b(?:PT\d{5,}|41\d{5,}|WS\d{5,}|CN[A-Z0-9]{4,}|M\d{3,}[A-Z]+|P\d{4,}[A-Z]+|T\d{4,})\b/gi;
+            const provRegex = /\b(BO|FE|MO|RE|RA|FC|PR|RN|PC)\b/g;
+
+            chunks.forEach(chunk => {
+                if (!/^(PIAZZALE|PIAZZA|VIA|CORSO|VIALE|STRADA|V\.LE|P\.ZZA|P\.ZA|C\.SO|P\.LE|PZ\.ZA|LUNGOMARE|VICOLO|BORGO|LOC\.|LOCALIT[AÀ]|FRAZ\.|FRAZIONE)\b/.test(chunk)) return;
+
+                // 3. Purificazione (Erase)
+                let cleanChunk = chunk
+                    .replace(junkRegex, ' ') // Rimuove il testo descrittivo
+                    .replace(serialsRegex, ' ') // Svuota i seriali dei ticket, permettendo ai frammenti di città di unirsi
+                    .replace(/\b\d{6,}\b/g, ' ') // Svuota altri numeri lunghi casuali
+                    .replace(/\s+/g, ' ')
+                    .trim();
+
+                let cutIndex = -1;
+                let matches = [...cleanChunk.matchAll(provRegex)];
+                
+                if (matches.length > 0) {
+                    // Trova la prima provincia e aggiunge un "elastico" di 30 caratteri 
+                    // per catturare pezzi di città slittati (es. FE / FINALE)
+                    let provEnd = matches[0].index + matches[0][0].length;
+                    cutIndex = Math.min(provEnd + 30, cleanChunk.length);
+                }
+
+                let finalExtraction = "";
+                
+                // 4. Taglio Soft
+                if (cutIndex !== -1) {
+                    finalExtraction = cleanChunk.substring(0, cutIndex);
+                } else {
+                    finalExtraction = cleanChunk.substring(0, 80);
+                }
+
+                // 5. Lucidatura Finale
+                let polishedAddr = finalExtraction
+                    .replace(/[^A-Z0-9\s/.,'-]/g, '') 
+                    .replace(/\s+/g, ' ') 
+                    .replace(/^[.,'\-\s]+|[.,'\-\s]+$/g, '') 
+                    .trim();
+                
+                const isBase = ["COLOMBO", "ROSLE", "SAVIGNO", "CALIPARI"].some(key => polishedAddr.includes(key));
+                
+                if (polishedAddr.length > 6 && !isBase && /[A-Z]/.test(polishedAddr)) {
+                    addresses.push(polishedAddr);
+                }
+            });
+
+            const day = new Date().getDay();
+            route = [CONFIG.HOME];
+            if (day > 0 && day < 6) route.push(CONFIG.COLOMBO);
+            if (hasSavigno) route.push(CONFIG.SAVIGNO);
+            if (hasPoste) route.push(CONFIG.MEDICINA);
+            
+            [...new Set(addresses)].forEach(a => route.push(a));
+            route.push(CONFIG.HOME);
+            
+            renderUI(hasPoste, hasSavigno);
+        }
+
+        function renderUI(alertPoste, alertSavigno) {
+            const list = document.getElementById('address-list');
+            document.getElementById('results-area').classList.remove('hidden');
+            list.innerHTML = '';
+
+            if(alertSavigno) list.innerHTML += `<div class="p-3 bg-yellow-600/20 border-l-4 border-yellow-500 text-xs font-black text-left mb-2 uppercase text-yellow-500 tracking-widest">! PRIORITÀ: RITIRO SAVIGNO !</div>`;
+            if(alertPoste) list.innerHTML += `<div class="p-3 bg-red-900/40 border-l-4 border-red-500 text-xs font-black text-left mb-4 uppercase text-red-400 tracking-widest">! PRIORITÀ: MAGAZZINO MEDICINA !</div>`;
+
+            route.forEach((addr, i) => {
+                const isBase = (i === 0 || i === route.length - 1);
+                const isSpecial = [CONFIG.COLOMBO, CONFIG.MEDICINA, CONFIG.SAVIGNO].includes(addr);
+                
+                const card = document.createElement('div');
+                card.className = `target-card ${isBase ? 'base-node' : ''} ${isSpecial ? 'highlight' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="pr-14">
+                        <div class="text-[10px] font-black opacity-50 uppercase tracking-[0.3em] mb-1 text-[#8A9A5B]">
+                            ${i === 0 ? 'START HQ' : (i === route.length-1 ? 'END HQ' : 'TARGET ' + i)}
+                        </div>
+                        <div class="text-[16px] font-bold uppercase leading-snug text-white editable-addr" 
+                             ${!isBase && !isSpecial ? 'contenteditable="true"' : ''} 
+                             data-index="${i}"
+                             onblur="updateRoute(${i}, this.innerText)"
+                             style="word-break: break-word;">
+                            ${addr}
+                        </div>
+                    </div>
+                    ${!isBase ? `
+                        <button onclick="removeTappa(${i})" class="absolute top-1/2 right-4 -translate-y-1/2 text-red-500 font-black text-4xl opacity-70 hover:opacity-100 p-2 leading-none transition-opacity">×</button>
+                    ` : ''}
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function updateRoute(index, newText) {
+            route[index] = newText.trim().toUpperCase();
+        }
+
+        function removeTappa(index) {
+            route.splice(index, 1);
+            renderUI(false, false); 
+        }
+
+        function openMaps() {
+            if (route.length < 2) return;
+            const stops = route.map(a => encodeURIComponent(a)).join('/');
+            window.open(`https://www.google.it/maps/dir/${stops}`, '_blank');
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFillColor(15, 17, 8); 
+            doc.rect(0, 0, 210, 297, 'F');
+            
+            doc.setTextColor(138, 154, 91);
+            doc.setFont("courier", "bolditalic");
+            doc.setFontSize(26);
+            doc.text("PATHFINDER", 105, 20, null, null, "center");
+            
+            doc.setFont("courier", "bold");
+            doc.setFontSize(10);
+            doc.setTextColor(200, 200, 200);
+            doc.text(`DATA MISSIONE: ${new Date().toLocaleDateString('it-IT')}`, 105, 28, null, null, "center");
+            
+            doc.setDrawColor(138, 154, 91);
+            doc.line(20, 34, 190, 34);
+
+            let yPos = 45;
+            
+            route.forEach((addr, i) => {
+                if (yPos > 270) {
+                    doc.addPage();
+                    doc.setFillColor(15, 17, 8);
+                    doc.rect(0, 0, 210, 297, 'F');
+                    yPos = 20;
+                }
+
+                const isBase = (i === 0 || i === route.length - 1);
+                
+                doc.setFont("courier", "bold");
+                doc.setFontSize(9);
+                doc.setTextColor(138, 154, 91);
+                const label = i === 0 ? '[START HQ]' : (i === route.length-1 ? '[END HQ]' : `[TARGET 0${i}]`);
+                doc.text(label, 20, yPos);
+                
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(12);
+                doc.setTextColor(255, 255, 255);
+                
+                const splitAddr = doc.splitTextToSize(addr, 150);
+                doc.text(splitAddr, 45, yPos);
+                
+                yPos += (splitAddr.length * 6) + 7;
+                
+                if (!isBase) {
+                    doc.setDrawColor(60, 60, 60);
+                    doc.line(20, yPos - 3, 190, yPos - 3);
+                }
+            });
+
+            doc.save(`Ordine_Missione_${new Date().getTime()}.pdf`);
+        }
+    </script>
+</body>
+</html>
