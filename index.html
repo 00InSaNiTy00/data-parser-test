@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Hub Operativo - Pathfinder & Firma PDF</title>
+  <title>Hub Operativo - Enterprise Edition</title>
   
   <style>
     * {
@@ -14,14 +14,14 @@
 
     :root {
       /* Palette Enterprise "Slate & Tech Blue" */
-      --md-sys-color-background: #0f172a; /* Slate 900 - Sfondo scurissimo */
-      --md-sys-color-surface: #1e293b; /* Slate 800 - Sfondo per card */
-      --md-sys-color-surface-container: #334155; /* Slate 700 - Menù laterale */
-      --md-sys-color-primary: #3b82f6; /* Blue 500 - Colore principale acceso */
-      --md-sys-color-on-primary: #ffffff; /* Testo bianco sui bottoni blu */
-      --md-sys-color-primary-container: #1e3a8a; /* Blue 900 - Sfondi attivi tenui */
-      --md-sys-color-on-surface: #f8fafc; /* Slate 50 - Testo principale chiarissimo */
-      --md-sys-color-outline: #64748b; /* Slate 500 - Bordi e linee */
+      --md-sys-color-background: #0f172a; 
+      --md-sys-color-surface: #1e293b; 
+      --md-sys-color-surface-container: #334155; 
+      --md-sys-color-primary: #3b82f6; 
+      --md-sys-color-on-primary: #ffffff; 
+      --md-sys-color-primary-container: #1e3a8a; 
+      --md-sys-color-on-surface: #f8fafc; 
+      --md-sys-color-outline: #64748b; 
     }
 
     body {
@@ -57,6 +57,9 @@
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0,0,0,0.5);
       transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .menu-toggle:active {
@@ -78,6 +81,7 @@
       flex-direction: column;
       padding: 80px 16px 20px 16px;
       border-radius: 0 28px 28px 0; 
+      overflow-y: auto; 
     }
 
     .sidebar-menu.open {
@@ -132,6 +136,46 @@
       color: var(--md-sys-color-primary);
     }
 
+    /* --- STILI PER LA NUOVA SEZIONE LINK ESTERNI --- */
+    .menu-divider {
+      height: 1px;
+      background-color: var(--md-sys-color-outline);
+      opacity: 0.2;
+      margin: 24px 20px 12px 20px;
+      flex-shrink: 0;
+    }
+
+    .menu-label {
+      color: var(--md-sys-color-outline);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 0 20px;
+      margin-bottom: 8px;
+    }
+
+    .external-link {
+      color: var(--md-sys-color-primary);
+      text-decoration: none;
+      padding: 14px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-radius: 100px;
+      transition: all 0.2s ease;
+      margin-bottom: 4px;
+    }
+
+    .external-link:active {
+      background-color: rgba(59, 130, 246, 0.15);
+      transform: scale(0.98);
+    }
+
     .menu-overlay {
       display: none;
       position: absolute;
@@ -139,7 +183,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(15, 23, 42, 0.7); /* Overlay intonato al blu */
+      background: rgba(15, 23, 42, 0.7); 
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
       z-index: 150;
@@ -178,8 +222,29 @@
 
     <div class="sidebar-menu" id="sidebar-menu">
       <button class="close-btn" onclick="toggleMenu()">&times;</button>
+      
+      <div class="menu-label">Strumenti Locali</div>
       <button class="tab-btn active" onclick="switchApp(event, 'pathfinder-app')">Pathfinder</button>
       <button class="tab-btn" onclick="switchApp(event, 'firma-app')">Firma PDF</button>
+
+      <div class="menu-divider"></div>
+      
+      <div class="menu-label">Portali Operativi</div>
+      
+      <a href="https://mi.solutions30.com/" target="_blank" class="external-link">
+        <span>MI Solutions30</span>
+        <span style="font-size: 18px; font-weight: normal;">↗</span>
+      </a>
+      
+      <a href="https://smartfix.solutions30.com/interventions" target="_blank" class="external-link">
+        <span>Smartfix</span>
+        <span style="font-size: 18px; font-weight: normal;">↗</span>
+      </a>
+      
+      <a href="https://partsurfer.hp.com/" target="_blank" class="external-link">
+        <span>PartSurfer HP</span>
+        <span style="font-size: 18px; font-weight: normal;">↗</span>
+      </a>
     </div>
 
     <div id="pathfinder-app" class="app-content active">
@@ -199,23 +264,26 @@
     }
 
     function switchApp(evt, appName) {
+      // Nascondi tutte le tab
       let contents = document.getElementsByClassName("app-content");
       for (let i = 0; i < contents.length; i++) {
         contents[i].classList.remove("active");
       }
 
+      // Rimuovi stato attivo dai pulsanti
       let btns = document.getElementsByClassName("tab-btn");
       for (let i = 0; i < btns.length; i++) {
         btns[i].classList.remove("active");
       }
 
+      // Mostra app selezionata
       document.getElementById(appName).classList.add("active");
       evt.currentTarget.classList.add("active");
 
+      // Chiudi il menù per non occupare lo schermo
       toggleMenu();
     }
   </script>
 
 </body>
 </html>
-
