@@ -3,61 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical PDF v12.0 - Phase 2</title>
+    <title>Tactical PDF v12.0 - MD3 Phase</title>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
-            --bg-dark: #12140a; --accent: #A3B86C; --ui-bg: rgba(20, 23, 11, 0.85); --text: #A3B86C;
-            --pattern: repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 4px);
+            /* Material Design 3 Tactical Palette */
+            --md-sys-color-background: #12140e;
+            --md-sys-color-surface: #1a1c16;
+            --md-sys-color-surface-container: #23281d;
+            --md-sys-color-primary: #a3b86c;
+            --md-sys-color-on-primary: #1d260c;
+            --md-sys-color-primary-container: #3c4d21;
+            --md-sys-color-on-surface: #e2e4d5;
+            --md-sys-color-outline: #747969;
+            --md-sys-color-error: #ffb4ab;
+            
+            --pattern: none;
+            --glass-bg: rgba(35, 40, 29, 0.85);
         }
-        .theme-retro { --bg-dark: #000; --accent: #0f4; --ui-bg: rgba(0,20,0,0.85); --text: #0f4; --pattern: radial-gradient(circle, rgba(0,255,0,0.05), #000); }
-        .theme-light { --bg-dark: #e5e7eb; --accent: #1f2937; --ui-bg: rgba(255,255,255,0.85); --text: #1f2937; --pattern: none; }
-        .theme-cyber { --bg-dark: #050510; --accent: #00ffff; --ui-bg: rgba(5,5,16,0.85); --text: #ff00ff; --pattern: linear-gradient(0deg, rgba(255,0,255,0.05), transparent); }
-        
-        body, html { margin:0; padding:0; width:100%; height:100%; background-color:var(--bg-dark); background-image:var(--pattern); color:var(--text); font-family:monospace; overflow:hidden; transition:0.3s; }
 
-        #main-viewport { height:calc(100% - 100px); width:100%; overflow-y:auto; display:flex; flex-direction:column; align-items:center; padding:20px 0 160px 0; -webkit-overflow-scrolling:touch; position: relative; }
+        .theme-retro { --md-sys-color-background: #000; --md-sys-color-primary: #0f4; --glass-bg: rgba(0,20,0,0.85); --md-sys-color-on-surface: #0f4; --pattern: radial-gradient(circle, rgba(0,255,0,0.05), #000); }
+        .theme-light { --md-sys-color-background: #f4f5f0; --md-sys-color-primary: #384227; --glass-bg: rgba(255,255,255,0.9); --md-sys-color-on-surface: #1a1c16; --pattern: none; }
+        .theme-cyber { --md-sys-color-background: #050510; --md-sys-color-primary: #00ffff; --glass-bg: rgba(5,5,16,0.85); --md-sys-color-on-surface: #ff00ff; --pattern: linear-gradient(0deg, rgba(255,0,255,0.05), transparent); }
+        
+        body, html { 
+            margin:0; padding:0; width:100%; height:100%; 
+            background-color:var(--md-sys-color-background); 
+            background-image:var(--pattern); 
+            color:var(--md-sys-color-on-surface); 
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            overflow:hidden; 
+            transition:background-color 0.3s, color 0.3s; 
+        }
+
+        #main-viewport { height:100%; width:100%; overflow-y:auto; display:flex; flex-direction:column; align-items:center; padding:20px 0 120px 0; -webkit-overflow-scrolling:touch; position: relative; }
         #pages-container { width:95%; max-width:800px; position:relative; }
-        .page-wrapper { position:relative; background:white; margin-bottom:25px; box-shadow:0 10px 30px rgba(0,0,0,0.8); border-radius:4px; overflow:hidden; }
+        
+        /* Pagine PDF con stile Card MD3 */
+        .page-wrapper { 
+            position:relative; 
+            background:white; 
+            margin-bottom:24px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.4); 
+            border-radius: 8px; /* Le pagine dei documenti mantengono bordi meno curvi */
+            overflow:hidden; 
+        }
         canvas { width:100% !important; height:auto !important; display:block; }
         
         .interaction-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; }
         .interaction-layer > * { pointer-events:auto; }
 
-        /* Effetto Glassmorphism "Tactical HUD" */
-        #bottom-nav { position:fixed; bottom:0; width:100%; height:100px; background:var(--ui-bg); backdrop-filter:blur(10px); border-top:2px solid var(--accent); display:flex; justify-content:flex-start; align-items:center; z-index:1000; padding-bottom:env(safe-area-inset-bottom); overflow-x:auto; gap: 15px; padding-left: 15px; padding-right: 15px; }
+        /* Floating Action Bar (Bottom Nav) MD3 */
+        #bottom-nav { 
+            position:fixed; 
+            bottom:16px; 
+            left:50%;
+            transform: translateX(-50%);
+            width:calc(100% - 32px); 
+            max-width: 600px;
+            height: 72px; 
+            background:var(--glass-bg); 
+            backdrop-filter:blur(12px); 
+            -webkit-backdrop-filter:blur(12px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 36px; /* A pillola */
+            display:flex; justify-content:space-evenly; align-items:center; 
+            z-index:1000; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            padding: 0 8px;
+            overflow-x:auto; 
+            scrollbar-width: none;
+        }
         #bottom-nav::-webkit-scrollbar { display: none; }
-        .nav-item { display:flex; flex-direction:column; align-items:center; color:var(--accent); font-size:10px; cursor:pointer; min-width:60px; font-weight:bold; letter-spacing: 1px; transition: 0.2s; }
-        .nav-item:active { transform: scale(0.9); }
-        .nav-icon { font-size:22px; margin-bottom: 4px; }
-
-        .color-dot { width:24px; height:24px; border-radius:50%; border:2px solid transparent; cursor:pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        .color-dot.active { border-color:white; box-shadow:0 0 12px var(--accent); transform: scale(1.2); }
-
-        #theme-selector { position:fixed; left:15px; top:40%; transform:translateY(-50%); display:flex; flex-direction:column; gap:12px; z-index:1001; background:var(--ui-bg); backdrop-filter:blur(10px); padding:10px; border-radius:20px; border:1px solid var(--accent); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .theme-btn { font-size:22px; cursor:pointer; opacity:0.5; transition:0.3s; }
-        .theme-btn.active { opacity:1; transform:scale(1.2); filter: drop-shadow(0 0 8px var(--accent)); }
-
-        .draggable { position:absolute; cursor:move; padding:10px; border:2px dashed transparent; touch-action:none; z-index:100; font-weight:bold; }
-        .draggable.active { border-color:var(--accent); background:rgba(163, 184, 108, 0.15); border-radius: 4px; }
         
-        .del-btn { position:absolute; top:-12px; right:-12px; width:26px; height:26px; background:#ef4444; color:white; border-radius:50%; display:none; align-items:center; justify-content:center; font-weight:bold; font-size:16px; box-shadow:0 2px 5px rgba(0,0,0,0.5); pointer-events: auto; cursor:pointer; }
+        .nav-item { 
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            color:var(--md-sys-color-primary); 
+            font-size:11px; font-weight:600; cursor:pointer; 
+            min-width:64px; height: 56px;
+            border-radius: 16px;
+            transition: all 0.2s ease; 
+        }
+        .nav-item:active { background-color: rgba(163, 184, 108, 0.15); transform: scale(0.95); }
+        .nav-icon { font-size:20px; margin-bottom: 2px; }
+
+        /* Selettori Colore MD3 */
+        .color-dot { 
+            width:24px; height:24px; 
+            border-radius:50%; border:2px solid transparent; 
+            cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .color-dot.active { border-color:white; box-shadow:0 0 0 2px var(--md-sys-color-primary); transform: scale(1.1); }
+
+        /* Theme Selector Fluttuante a Pillola */
+        #theme-selector { 
+            position:fixed; left:16px; top:40%; transform:translateY(-50%); 
+            display:flex; flex-direction:column; gap:16px; z-index:1001; 
+            background:var(--glass-bg); backdrop-filter:blur(12px); 
+            padding:12px 8px; border-radius:32px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4); 
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .theme-btn { 
+            font-size:20px; cursor:pointer; opacity:0.4; transition:all 0.3s; 
+            background: transparent; border-radius: 50%; padding: 4px;
+        }
+        .theme-btn.active { opacity:1; background-color: rgba(255,255,255,0.1); transform:scale(1.1); }
+
+        /* Elementi trascinabili e resizer aggiornati */
+        .draggable { position:absolute; cursor:move; padding:8px; border:2px dashed transparent; touch-action:none; z-index:100; font-weight:bold; }
+        .draggable.active { border-color:var(--md-sys-color-outline); background:rgba(163, 184, 108, 0.1); border-radius: 8px; }
+        
+        .del-btn { 
+            position:absolute; top:-12px; right:-12px; width:28px; height:28px; 
+            background:var(--md-sys-color-error); color:#410002; 
+            border-radius:50%; display:none; align-items:center; justify-content:center; 
+            font-weight:bold; font-size:18px; box-shadow:0 2px 6px rgba(0,0,0,0.4); 
+            pointer-events: auto; cursor:pointer; 
+        }
         .draggable.active .del-btn { display:flex; }
 
-        .resizer { width:26px; height:26px; background:var(--accent); position:absolute; right:-13px; bottom:-13px; border-radius:50%; display:none; border:2px solid var(--bg-dark); pointer-events: auto; cursor:nwse-resize; box-shadow:0 2px 5px rgba(0,0,0,0.5); }
+        .resizer { 
+            width:24px; height:24px; 
+            background:var(--md-sys-color-primary); 
+            position:absolute; right:-12px; bottom:-12px; 
+            border-radius:50%; display:none; 
+            border:3px solid var(--md-sys-color-surface); 
+            pointer-events: auto; cursor:nwse-resize; 
+            box-shadow:0 2px 6px rgba(0,0,0,0.4); 
+        }
         .draggable.active .resizer { display:block; }
 
-        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.9); backdrop-filter:blur(5px); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:2000; padding:20px; }
-        .sig-container { background:white; border:4px solid var(--accent); border-radius:8px; width:100%; max-width:500px; height:40vh; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        /* MD3 Dialog (Modal) */
+        .modal { 
+            position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); 
+            display:none; flex-direction:column; align-items:center; justify-content:center; 
+            z-index:2000; padding:24px; 
+        }
+        .dialog-surface {
+            background: var(--md-sys-color-surface-container);
+            padding: 24px;
+            border-radius: 28px; /* Curve morbide MD3 */
+            width: 100%; max-width: 500px;
+            box-shadow: 0 24px 38px 3px rgba(0,0,0,0.4);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .sig-container { 
+            background:white; 
+            border-radius: 16px; 
+            width:100%; height:40vh; 
+            overflow: hidden;
+            border: 2px solid var(--md-sys-color-outline);
+        }
         #full-sig-pad { width:100%; height:100%; touch-action:none; }
+        
+        /* Tasti MD3 (Filled e Outlined) */
+        .btn-tonal {
+            background-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            border-radius: 100px;
+            padding: 12px 24px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-tonal:active { background-color: #8fa65a; }
+        
+        .btn-outlined {
+            background-color: transparent;
+            color: var(--md-sys-color-error);
+            border-radius: 100px;
+            padding: 12px 24px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid var(--md-sys-color-error);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-outlined:active { background-color: rgba(255, 180, 171, 0.1); }
+        
+        /* Pulsante Download Evidenziato */
+        .nav-item.highlight {
+            background-color: var(--md-sys-color-primary-container);
+            border-radius: 24px;
+            margin-left: auto;
+            color: var(--md-sys-color-on-surface);
+            padding: 0 12px;
+        }
     </style>
 </head>
 <body onclick="deselectAll()">
 
-    <div id="main-viewport"><div id="pages-container"><div class="text-center mt-32 opacity-50 uppercase tracking-widest text-lg">In attesa di file protocollato...</div></div></div>
+    <div id="main-viewport"><div id="pages-container"><div class="text-center mt-32 opacity-50 uppercase tracking-widest text-sm font-semibold">In attesa di file protocollato...</div></div></div>
 
     <div id="theme-selector">
         <div class="theme-btn active" onclick="applyTheme('camo', this)">🌲</div>
@@ -67,27 +212,32 @@
     </div>
 
     <div id="sig-modal" class="modal" onclick="event.stopPropagation()">
-        <h2 class="mb-4 font-bold text-2xl text-white uppercase tracking-widest" style="color: var(--accent); text-shadow: 0 0 10px var(--accent);">Acquisizione Firma</h2>
-        <div class="sig-container"><canvas id="full-sig-pad"></canvas></div>
-        <div class="flex gap-4 mt-6 w-full max-w-md">
-            <button onclick="signaturePad.clear()" class="flex-1 border-2 py-3 rounded-md font-bold text-white uppercase" style="border-color: #ef4444;">Reset</button>
-            <button onclick="confirmSignature()" class="flex-1 py-3 rounded-md font-bold text-black uppercase" style="background-color: var(--accent);">Conferma</button>
+        <div class="dialog-surface">
+            <h2 class="mb-4 font-bold text-xl uppercase tracking-widest self-start" style="color: var(--md-sys-color-primary);">Acquisizione Firma</h2>
+            <div class="sig-container"><canvas id="full-sig-pad"></canvas></div>
+            <div class="flex gap-4 mt-6 w-full">
+                <button onclick="signaturePad.clear()" class="flex-1 btn-outlined">Reset</button>
+                <button onclick="confirmSignature()" class="flex-1 btn-tonal">Conferma</button>
+            </div>
         </div>
     </div>
 
     <nav id="bottom-nav" onclick="event.stopPropagation()">
         <div class="nav-item" onclick="document.getElementById('pdf-file').click()"><span class="nav-icon">📂</span><span>OPEN</span></div>
-        <div class="flex gap-3 px-3 border-l border-r border-zinc-600 items-center h-1/2">
+        
+        <div class="flex gap-3 px-3 items-center h-full relative before:content-[''] before:absolute before:left-0 before:h-1/2 before:w-[1px] before:bg-gray-600 after:content-[''] after:absolute after:right-0 after:h-1/2 after:w-[1px] after:bg-gray-600">
             <div id="dot-black" class="color-dot bg-black active" onclick="setCol('#000000', this)"></div>
             <div id="dot-blue" class="color-dot bg-blue-800" onclick="setCol('#0000bb', this)"></div>
             <div id="dot-red" class="color-dot bg-red-600" onclick="setCol('#cc0000', this)"></div>
         </div>
+        
         <div class="nav-item" onclick="openModal('sig-modal')"><span class="nav-icon">🖋️</span><span>FIRMA</span></div>
         <div class="nav-item" onclick="addNote()"><span class="nav-icon">📝</span><span>NOTA</span></div>
         <div class="nav-item" onclick="addDate()"><span class="nav-icon">📅</span><span>DATA</span></div>
         <div class="nav-item" onclick="addTime()"><span class="nav-icon">🕒</span><span>ORA</span></div>
-        <div class="nav-item ml-auto" onclick="shareViaEmail()"><span class="nav-icon">📧</span><span>MAIL</span></div>
-        <div class="nav-item" onclick="downloadPDF()"><span class="nav-icon text-white">💾</span><span class="text-white">SAVE</span></div>
+        <div class="nav-item" onclick="shareViaEmail()"><span class="nav-icon">📧</span><span>MAIL</span></div>
+        
+        <div class="nav-item highlight" onclick="downloadPDF()"><span class="nav-icon">💾</span><span>SAVE</span></div>
     </nav>
     <input type="file" id="pdf-file" class="hidden" accept=".pdf">
 
@@ -95,7 +245,6 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
         let signaturePad, pdfBytes, registry = [], currCol = '#000000', isResizing = false;
         
-        // Imposta l'email di destinazione preferita qui
         const targetEmail = "indirizzo@esempio.com"; 
 
         window.onload = () => {
@@ -178,7 +327,6 @@
         function initDraggable(wrap, target, isImg) {
             let sx, sy, ix, iy, sw, rt;
             
-            // Gestione mista Mouse e Touch per spostamento
             const move = e => { 
                 if(isResizing) return; 
                 e.preventDefault();
@@ -199,7 +347,6 @@
             
             wrap.ontouchstart = startMove; wrap.onmousedown = startMove;
 
-            // Gestione mista Mouse e Touch per ridimensionamento
             const res = wrap.querySelector('.resizer');
             const resize = e => { 
                 e.preventDefault(); 
@@ -218,7 +365,6 @@
 
             res.ontouchstart = startResize; res.onmousedown = startResize;
 
-            // Pulizia eventi
             const endAll = () => {
                 isResizing=false;
                 document.removeEventListener('touchmove', move); document.removeEventListener('mousemove', move);
@@ -242,7 +388,6 @@
         function confirmSignature() { if(!signaturePad.isEmpty()) addObj('sig', signaturePad.toDataURL()); closeModal('sig-modal'); }
         function addNote() { addObj('note', 'TESTO...'); }
 
-        // Motore centrale per generare il PDF
         async function buildPDFBlob() {
             if(!pdfBytes) return null; 
             const lib = await PDFLib.PDFDocument.load(pdfBytes.slice(0)); 
