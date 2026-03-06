@@ -3,27 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pathfinder Sentinel v23.0 - MD3 Phase</title>
+    <title>Pathfinder Sentinel v24.0 - Enterprise Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
-        /* Material Design 3 Professional Palette */
-        --md-sys-color-background: #0f172a;
-        --md-sys-color-surface: #1e293b;
-        --md-sys-color-surface-container: #334155;
-        --md-sys-color-primary: #3b82f6;
-        --md-sys-color-on-primary: #ffffff;
-        --md-sys-color-primary-container: #1e3a8a;
-        --md-sys-color-on-surface: #f8fafc;
-        --md-sys-color-outline: #64748b;
-        --md-sys-color-error: #ef4444;
-        --md-sys-color-on-error: #ffffff;
-        
-        --pattern: none;
-        --glass-bg: rgba(30, 41, 59, 0.85); /* Slate 800 con opacità per i menù fluttuanti */
-    }
+            /* Material Design 3 Professional Palette - Slate & Tech Blue */
+            --md-sys-color-background: #0f172a;
+            --md-sys-color-surface: #1e293b;
+            --md-sys-color-surface-container: #334155;
+            --md-sys-color-primary: #3b82f6;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-primary-container: #1e3a8a;
+            --md-sys-color-on-surface: #f8fafc;
+            --md-sys-color-outline: #64748b;
+            --md-sys-color-error: #ef4444;
+            --md-sys-color-on-error: #ffffff;
+            --glass-bg: rgba(30, 41, 59, 0.85);
+        }
 
         body { 
             background-color: var(--md-sys-color-background); 
@@ -31,37 +30,33 @@
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
             min-height: 100vh;
             margin: 0;
-            /* Sfondo pulito senza pattern pesanti per MD3 */
         }
 
-        .mono-text { font-family: 'Courier New', Courier, monospace; }
+        .mono-text { font-family: 'SF Mono', 'Courier New', Courier, monospace; }
 
-        /* Loader tattico */
         .loader { border-top-color: var(--md-sys-color-primary); animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* Indirizzo editabile MD3 */
         .editable-addr { 
             outline: none; 
             border-radius: 8px;
             padding: 4px 8px;
-            margin-left: -8px; /* Compensa il padding */
+            margin-left: -8px; 
             border: 1px solid transparent;
             transition: all 0.2s ease;
         }
         .editable-addr:focus { 
             background: rgba(0,0,0,0.3);
             border: 1px solid var(--md-sys-color-primary); 
-            box-shadow: 0 0 0 2px rgba(163, 184, 108, 0.2);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
         }
 
-        /* Pulsanti Base MD3 */
         .btn-tonal {
             background-color: var(--md-sys-color-primary);
             color: var(--md-sys-color-on-primary);
             transition: transform 0.1s, background-color 0.2s;
         }
-        .btn-tonal:active { transform: scale(0.98); background-color: #8fa65a; }
+        .btn-tonal:active { transform: scale(0.98); background-color: #2563eb; }
 
         .btn-outlined {
             border: 1px solid var(--md-sys-color-outline);
@@ -75,29 +70,29 @@
             color: var(--md-sys-color-error);
             transition: background-color 0.2s;
         }
-        .btn-error-outlined:active { background-color: rgba(255, 180, 171, 0.1); }
+        .btn-error-outlined:active { background-color: rgba(239, 68, 68, 0.1); }
     </style>
 </head>
 <body class="p-4 pb-32">
 
     <div class="mb-8 mt-4 text-center">
-        <h1 class="text-4xl font-black tracking-tighter uppercase italic drop-shadow-md" style="color: var(--md-sys-color-primary);">Pathfinder</h1>
-        <div class="mono-text text-[11px] font-bold opacity-70 tracking-[0.4em] mt-1">V23.0 - ERASER</div>
+        <h1 class="text-4xl font-black tracking-tighter uppercase drop-shadow-md" style="color: var(--md-sys-color-primary);">Pathfinder</h1>
+        <div class="mono-text text-[11px] font-bold opacity-70 tracking-[0.4em] mt-1" style="color: var(--md-sys-color-outline);">V24.0 - HYBRID ENGINE</div>
     </div>
 
     <div class="mb-8 w-full max-w-lg mx-auto">
-        <input type="file" id="screenshot-input" accept="image/*" class="hidden">
-        <button onclick="document.getElementById('screenshot-input').click()" class="w-full btn-tonal py-5 rounded-[28px] font-bold text-lg uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.4)]">
-            ⚡ Scansione Missione
+        <input type="file" id="file-input" accept="image/*, application/pdf" class="hidden">
+        <button onclick="document.getElementById('file-input').click()" class="w-full btn-tonal py-5 rounded-[28px] font-bold text-lg uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.4)]">
+            ⚡ Carica Dati (IMG/PDF)
         </button>
     </div>
 
     <div id="loading-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
         <div class="flex flex-col items-center p-8 rounded-[32px] w-5/6 max-w-sm" style="background-color: var(--md-sys-color-surface-container); box-shadow: 0 24px 38px rgba(0,0,0,0.5);">
-            <div class="loader rounded-full border-4 border-gray-700 h-16 w-16 mb-6"></div>
-            <div class="text-sm font-black uppercase animate-pulse tracking-widest text-center">
+            <div class="loader rounded-full border-4 border-slate-700 h-16 w-16 mb-6"></div>
+            <div id="loading-text" class="text-sm font-black uppercase animate-pulse tracking-widest text-center">
                 Elaborazione...<br>
-                <span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">RIMOZIONE RUMORE TABELLARE</span>
+                <span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">ANALISI MOTORE IBRIDO</span>
             </div>
         </div>
     </div>
@@ -122,8 +117,11 @@
     </nav>
 
     <script>
-        // La lista JUNK e le costanti rimangono invariate
-        const JUNK_WORDS = "RICHIEDENTE|DESCRIZIONE|EFFETTUATA|PROBLEMI|MONITOR|TASTIERA|SPEDITO|LENOVO|PORTATILE|UPS|TNT|MB2|C-920|STU-520|ZT611|SNC|TICKET|PLOTTER|PRT|MPS|AE221|ASUS|CONTABANCONOTE|PC|DESKTOP|BATTERIA|SOSTITUZIONE|GUASTO|RITIRO|CONSEGNA|APPUNTAMENTO|TELEFONO|CELLULARE|CLIENTE|REFERENTE|PIANO|SCALA|INTERNO|CITOFONO|ATTENZIONE|URGENTE|DIFETTO|ALIMENTATORE|CAVO|MOUSE|RAM|SCHEDA|MADRE|VIDEO|HARD|DISK|SSD|INSTALLAZIONE|CONFIGURAZIONE|STAMPANTE|TONER|RIFORNIMENTO|MULETTO|SPORTELLO|POSTAZIONE|UFFICIO|MAGAZZINO|REPARTO|DIRIGENTE|RESPONSABILE|ASSISTENZA|TECNICO|INTERVENTO|GARANZIA|S30|GBR|FIELD|CENTRO-NORD|POLO|ISSUE|WLAN|PAPER|JAM|SENSOR|SEPARATOR|PICK|ASSY|KIT|SERVICE|STATION|INKS|ADF|GSO|REDI|WIFI|INCH|SN|DW|POSTE|GENERICO|BREVE|ACCENDE|NON|SI|RIMANE|NERO|COLLEGAMENTO|DIFETTOSO|WKO|C1\\.1|NOK|IL|SU|PULIZIA|CAMBIO|INCHIOSTRO|MESSAGGIO|ERRORE|BOURRAGE|COGNOME|LUCA|ELEFONO|RICHIEDE|RIPARAZIONE|DELLA|ALEX|DUMITRU|TEL|INFO|INFORTECHSRLS|COM|BICI";
+        // Motore PDF.js Worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+        // JUNK_WORDS espanso con i nuovi termini del PDF e della Dark Table
+        const JUNK_WORDS = "RICHIEDENTE|DESCRIZIONE|EFFETTUATA|PROBLEMI|MONITOR|TASTIERA|SPEDITO|LENOVO|PORTATILE|UPS|TNT|MB2|C-920|STU-520|ZT611|SNC|TICKET|PLOTTER|PRT|MPS|AE221|ASUS|CONTABANCONOTE|PC|DESKTOP|BATTERIA|SOSTITUZIONE|GUASTO|RITIRO|CONSEGNA|APPUNTAMENTO|TELEFONO|CELLULARE|CLIENTE|REFERENTE|PIANO|SCALA|INTERNO|CITOFONO|ATTENZIONE|URGENTE|DIFETTO|ALIMENTATORE|CAVO|MOUSE|RAM|SCHEDA|MADRE|VIDEO|HARD|DISK|SSD|INSTALLAZIONE|CONFIGURAZIONE|STAMPANTE|TONER|RIFORNIMENTO|MULETTO|SPORTELLO|POSTAZIONE|UFFICIO|MAGAZZINO|REPARTO|DIRIGENTE|RESPONSABILE|ASSISTENZA|TECNICO|INTERVENTO|GARANZIA|S30|GBR|FIELD|CENTRO-NORD|POLO|ISSUE|WLAN|PAPER|JAM|SENSOR|SEPARATOR|PICK|ASSY|KIT|SERVICE|STATION|INKS|ADF|GSO|REDI|WIFI|INCH|SN|DW|POSTE|GENERICO|BREVE|ACCENDE|NON|SI|RIMANE|NERO|COLLEGAMENTO|DIFETTOSO|WKO|C1\\.1|NOK|IL|SU|PULIZIA|CAMBIO|INCHIOSTRO|MESSAGGIO|ERRORE|BOURRAGE|COGNOME|LUCA|ELEFONO|RICHIEDE|RIPARAZIONE|DELLA|ALEX|DUMITRU|TEL|INFO|INFORTECHSRLS|COM|BICI|ADJ|ST-150F|ELITEBOOK|WWAN|RTK|KBD|COVER|W/KB|EMEA|FREEZE";
 
         const CONFIG = {
             HOME: "Via Nicola Calipari 299 Crevalcore BO",
@@ -134,25 +132,82 @@
 
         let route = [];
 
-        document.getElementById('screenshot-input').onchange = async (e) => {
+        document.getElementById('file-input').onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            document.getElementById('loading-overlay').classList.remove('hidden');
+            
+            const overlay = document.getElementById('loading-overlay');
+            const loadingText = document.getElementById('loading-text');
+            overlay.classList.remove('hidden');
             
             try {
-                const worker = await Tesseract.createWorker('ita', 1, { logger: () => {} });
-                const { data: { text } } = await worker.recognize(file);
-                await worker.terminate();
-                processSentinel(text);
+                // RAMIFICAZIONE 1: Estrazione Nativa PDF (Lettura perfetta, 0 errori ottici)
+                if (file.type === 'application/pdf') {
+                    loadingText.innerHTML = `Elaborazione...<br><span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">ESTRAZIONE PDF NATIVA</span>`;
+                    
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    let fullText = '';
+                    
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        // Unisce gli elementi del PDF aggiungendo spazi per non incollare le parole
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        fullText += pageText + ' \n';
+                    }
+                    processSentinel(fullText);
+                } 
+                // RAMIFICAZIONE 2: Estrazione Immagine con Filtro per Dark Mode
+                else if (file.type.startsWith('image/')) {
+                    loadingText.innerHTML = `Elaborazione...<br><span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">OCR CON FILTRO DARK MODE</span>`;
+                    
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    await new Promise(res => img.onload = res);
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width; 
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    ctx.fillStyle = "white";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Inversione Colori (Trasforma Dark Mode in Light Mode per aiutare l'OCR)
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    for (let i = 0; i < data.length; i += 4) {
+                        let r = 255 - data[i];     
+                        let g = 255 - data[i + 1]; 
+                        let b = 255 - data[i + 2]; 
+                        
+                        // Binarizzazione ad alto contrasto
+                        let avg = (r + g + b) / 3;
+                        let threshold = avg > 140 ? 255 : 0; 
+                        
+                        data[i] = data[i+1] = data[i+2] = threshold;
+                    }
+                    ctx.putImageData(imageData, 0, 0);
+
+                    const worker = await Tesseract.createWorker('ita', 1, { logger: () => {} });
+                    const { data: { text } } = await worker.recognize(canvas); // OCR sul canvas processato
+                    await worker.terminate();
+                    
+                    processSentinel(text);
+                } else {
+                    alert("Formato file non supportato. Usa PDF o Immagini.");
+                    overlay.classList.add('hidden');
+                }
             } catch (err) {
                 console.error(err);
-                alert("Anomalia nel sensore ottico.");
-            } finally {
-                document.getElementById('loading-overlay').classList.add('hidden');
-            }
+                alert("Anomalia nel motore di estrazione.");
+                overlay.classList.add('hidden');
+            } 
         };
 
-        // Protocollo Eraser invariato
+        // Protocollo Eraser
         function processSentinel(rawText) {
             const hasSavigno = /SAVIGNO|SAVIGN/i.test(rawText);
             const hasPoste = /POSTE|PT[0-9]|TICKET|CONTABANCONOTE/i.test(rawText);
@@ -176,7 +231,8 @@
             let addresses = [];
             const junkRegex = new RegExp(`\\b(${JUNK_WORDS})\\b`, 'gi');
             
-            const serialsRegex = /\b(?:PT\d{5,}|41\d{5,}|WS\d{5,}|CN[A-Z0-9]{4,}|M\d{3,}[A-Z]+|P\d{4,}[A-Z]+|T\d{4,})\b/gi;
+            // RegEx potenziato per assorbire i lunghi seriali visti nel PDF
+            const serialsRegex = /\b(?:PT\d{5,}|41\d{5,}|WS\d{5,}|CN[A-Z0-9]{4,}|M\d{3,}[A-Z]+|P\d{4,}[A-Z]+|T\d{4,}|1Z[0-9A-Z]{10,}|5CD[0-9A-Z]{6,})\b/gi;
             const provRegex = /\b(BO|FE|MO|RE|RA|FC|PR|RN|PC)\b/g;
 
             chunks.forEach(chunk => {
@@ -227,16 +283,15 @@
             [...new Set(addresses)].forEach(a => route.push(a));
             route.push(CONFIG.HOME);
             
+            document.getElementById('loading-overlay').classList.add('hidden');
             renderUI(hasPoste, hasSavigno);
         }
 
-        // Render UI Aggiornato a MD3
         function renderUI(alertPoste, alertSavigno) {
             const list = document.getElementById('address-list');
             document.getElementById('results-area').classList.remove('hidden');
             list.innerHTML = '';
 
-            // Card Avvisi MD3
             if(alertSavigno) list.innerHTML += `<div class="p-4 bg-yellow-900/30 border border-yellow-600/50 rounded-[16px] text-xs font-bold uppercase text-yellow-500 tracking-widest shadow-sm mb-4">⚠️ PRIORITÀ: RITIRO SAVIGNO</div>`;
             if(alertPoste) list.innerHTML += `<div class="p-4 bg-red-900/30 border border-red-800/50 rounded-[16px] text-xs font-bold uppercase text-red-400 tracking-widest shadow-sm mb-4">⚠️ PRIORITÀ: MAGAZZINO MEDICINA</div>`;
 
@@ -302,25 +357,27 @@
             window.open(`https://www.google.it/maps/dir/${stops}`, '_blank');
         }
 
-        // Esportazione PDF Invariata
+        // Generazione PDF Aggiornata al tema Enterprise (Slate/Tech Blue)
         function generatePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            doc.setFillColor(15, 17, 8); 
+            // Sfondo Slate 900
+            doc.setFillColor(15, 23, 42); 
             doc.rect(0, 0, 210, 297, 'F');
             
-            doc.setTextColor(163, 184, 108); // Adattato al nuovo verde primario
-            doc.setFont("courier", "bolditalic");
+            // Titolo Blue 500
+            doc.setTextColor(59, 130, 246); 
+            doc.setFont("helvetica", "bold");
             doc.setFontSize(26);
-            doc.text("PATHFINDER", 105, 20, null, null, "center");
+            doc.text("MANIFESTO SPEDIZIONI", 105, 20, null, null, "center");
             
-            doc.setFont("courier", "bold");
+            doc.setFont("helvetica", "normal");
             doc.setFontSize(10);
-            doc.setTextColor(200, 200, 200);
+            doc.setTextColor(148, 163, 184); // Slate 400
             doc.text(`DATA MISSIONE: ${new Date().toLocaleDateString('it-IT')}`, 105, 28, null, null, "center");
             
-            doc.setDrawColor(163, 184, 108);
+            doc.setDrawColor(59, 130, 246);
             doc.line(20, 34, 190, 34);
 
             let yPos = 45;
@@ -328,22 +385,22 @@
             route.forEach((addr, i) => {
                 if (yPos > 270) {
                     doc.addPage();
-                    doc.setFillColor(15, 17, 8);
+                    doc.setFillColor(15, 23, 42);
                     doc.rect(0, 0, 210, 297, 'F');
                     yPos = 20;
                 }
 
                 const isBase = (i === 0 || i === route.length - 1);
                 
-                doc.setFont("courier", "bold");
+                doc.setFont("helvetica", "bold");
                 doc.setFontSize(9);
-                doc.setTextColor(163, 184, 108);
+                doc.setTextColor(59, 130, 246);
                 const label = i === 0 ? '[START HQ]' : (i === route.length-1 ? '[END HQ]' : `[TARGET 0${i}]`);
                 doc.text(label, 20, yPos);
                 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(12);
-                doc.setTextColor(255, 255, 255);
+                doc.setTextColor(248, 250, 252); // Slate 50 (Bianco ghiaccio)
                 
                 const splitAddr = doc.splitTextToSize(addr, 150);
                 doc.text(splitAddr, 45, yPos);
@@ -351,7 +408,7 @@
                 yPos += (splitAddr.length * 6) + 7;
                 
                 if (!isBase) {
-                    doc.setDrawColor(60, 60, 60);
+                    doc.setDrawColor(51, 65, 85); // Slate 700
                     doc.line(20, yPos - 3, 190, yPos - 3);
                 }
             });
@@ -361,4 +418,3 @@
     </script>
 </body>
 </html>
-
