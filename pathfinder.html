@@ -3,84 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pathfinder Sentinel v23.0</title>
+    <title>Pathfinder Sentinel v23.0 - MD3 Phase</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --bg: #0f1108; --accent: #8A9A5B; --text: #d1d6b8; }
+        :root { 
+            /* Material Design 3 Tactical Palette (Coordinata con Firma PDF) */
+            --md-sys-color-background: #12140e;
+            --md-sys-color-surface: #1a1c16;
+            --md-sys-color-surface-container: #23281d;
+            --md-sys-color-primary: #a3b86c;
+            --md-sys-color-on-primary: #1d260c;
+            --md-sys-color-primary-container: #3c4d21;
+            --md-sys-color-on-surface: #e2e4d5;
+            --md-sys-color-outline: #747969;
+            --md-sys-color-error: #ffb4ab;
+            --md-sys-color-on-error: #410002;
+            --glass-bg: rgba(35, 40, 29, 0.85);
+        }
+
         body { 
-            background-color: var(--bg); color: var(--text); 
-            font-family: 'Courier New', monospace; min-height: 100vh;
-            background-image: repeating-linear-gradient(45deg, #0f1108, #0f1108 15px, #14160c 15px, #14160c 30px);
+            background-color: var(--md-sys-color-background); 
+            color: var(--md-sys-color-on-surface); 
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            min-height: 100vh;
+            margin: 0;
+            /* Sfondo pulito senza pattern pesanti per MD3 */
         }
-        .status-bar { border: 2px solid var(--accent); background: rgba(0,0,0,0.95); box-shadow: 0 0 20px rgba(138,154,91,0.2); }
-        .target-card { 
-            background: rgba(138, 154, 91, 0.08); border-left: 6px solid var(--accent); 
-            margin-bottom: 16px; padding: 20px; position: relative;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
-        }
-        .highlight { border-left-color: #ffaa00; background: rgba(255, 170, 0, 0.1); }
-        .base-node { border-left-color: #ffffff; background: rgba(255,255,255,0.05); }
-        .loader { border-top-color: var(--accent); animation: spin 1s linear infinite; }
+
+        .mono-text { font-family: 'Courier New', Courier, monospace; }
+
+        /* Loader tattico */
+        .loader { border-top-color: var(--md-sys-color-primary); animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
+        /* Indirizzo editabile MD3 */
         .editable-addr { 
             outline: none; 
-            border-bottom: 1px dashed rgba(138, 154, 91, 0.5); 
-            padding-bottom: 2px; 
-            transition: all 0.2s;
+            border-radius: 8px;
+            padding: 4px 8px;
+            margin-left: -8px; /* Compensa il padding */
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
         }
         .editable-addr:focus { 
-            border-bottom: 1px solid var(--accent); 
-            color: #ffffff; 
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--md-sys-color-primary); 
+            box-shadow: 0 0 0 2px rgba(163, 184, 108, 0.2);
         }
+
+        /* Pulsanti Base MD3 */
+        .btn-tonal {
+            background-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .btn-tonal:active { transform: scale(0.98); background-color: #8fa65a; }
+
+        .btn-outlined {
+            border: 1px solid var(--md-sys-color-outline);
+            color: var(--md-sys-color-on-surface);
+            transition: background-color 0.2s;
+        }
+        .btn-outlined:active { background-color: rgba(255,255,255,0.05); }
+        
+        .btn-error-outlined {
+            border: 1px solid var(--md-sys-color-error);
+            color: var(--md-sys-color-error);
+            transition: background-color 0.2s;
+        }
+        .btn-error-outlined:active { background-color: rgba(255, 180, 171, 0.1); }
     </style>
 </head>
-<body class="p-4 pb-56">
+<body class="p-4 pb-32">
 
-    <div class="mb-6 text-center">
-        <h1 class="text-4xl font-black tracking-tighter uppercase italic text-[#8A9A5B] drop-shadow-md">Pathfinder</h1>
-        <div class="text-[11px] font-bold opacity-70 tracking-[0.4em] mt-1">V23.0 - PROTOCOLLO ERASER</div>
+    <div class="mb-8 mt-4 text-center">
+        <h1 class="text-4xl font-black tracking-tighter uppercase italic drop-shadow-md" style="color: var(--md-sys-color-primary);">Pathfinder</h1>
+        <div class="mono-text text-[11px] font-bold opacity-70 tracking-[0.4em] mt-1">V23.0 - ERASER</div>
     </div>
 
-    <div class="status-bar p-6 rounded-lg mb-8 text-center border-dashed">
+    <div class="mb-8 w-full max-w-lg mx-auto">
         <input type="file" id="screenshot-input" accept="image/*" class="hidden">
-        <button onclick="document.getElementById('screenshot-input').click()" class="bg-[#8A9A5B] text-[#0f1108] px-6 py-6 font-black rounded uppercase w-full active:scale-95 transition-all text-2xl shadow-2xl tracking-widest border-b-4 border-[#5d6837]">
-            ⚡ SCANSIONE MISSIONE ⚡
+        <button onclick="document.getElementById('screenshot-input').click()" class="w-full btn-tonal py-5 rounded-[28px] font-bold text-lg uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.4)]">
+            ⚡ Scansione Missione
         </button>
     </div>
 
-    <div id="loading-overlay" class="hidden flex flex-col items-center justify-center p-12 bg-black/95 rounded-xl border border-[#8A9A5B] mb-6 shadow-2xl z-50 fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4">
-        <div class="loader rounded-full border-4 border-gray-800 h-16 w-16 mb-6"></div>
-        <div class="text-sm font-black uppercase animate-pulse tracking-widest text-center">
-            ELABORAZIONE TATTICA...<br>
-            <span class="text-[9px] opacity-60 text-[#8A9A5B]">RIMOZIONE RUMORE TABELLARE</span>
+    <div id="loading-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div class="flex flex-col items-center p-8 rounded-[32px] w-5/6 max-w-sm" style="background-color: var(--md-sys-color-surface-container); box-shadow: 0 24px 38px rgba(0,0,0,0.5);">
+            <div class="loader rounded-full border-4 border-gray-700 h-16 w-16 mb-6"></div>
+            <div class="text-sm font-black uppercase animate-pulse tracking-widest text-center">
+                Elaborazione...<br>
+                <span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">RIMOZIONE RUMORE TABELLARE</span>
+            </div>
         </div>
     </div>
 
-    <div id="results-area" class="hidden">
-        <div class="flex justify-between items-center mb-4">
-            <div class="text-[10px] opacity-70 uppercase tracking-widest text-[#8A9A5B]">Tap sul testo per correggere</div>
-            <button onclick="generatePDF()" class="bg-gray-800 text-[#8A9A5B] border border-[#8A9A5B] px-3 py-2 rounded text-[10px] font-black uppercase tracking-wider hover:bg-[#8A9A5B] hover:text-[#0f1108] transition-colors shadow-lg">
-                ⬇ Esporta PDF
+    <div id="results-area" class="hidden max-w-lg mx-auto">
+        <div class="flex justify-between items-center mb-6 px-2">
+            <div class="text-[11px] font-medium opacity-70 uppercase tracking-wider">Tap sul testo per correggere</div>
+            <button onclick="generatePDF()" class="btn-outlined px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-2">
+                <span class="text-lg leading-none">↓</span> PDF
             </button>
         </div>
         <div id="address-list" class="space-y-4"></div>
     </div>
 
-    <nav class="fixed bottom-0 left-0 w-full p-4 bg-[#0f1108]/98 border-t-2 border-[#8A9A5B] flex flex-col gap-3 z-40">
-        <div class="flex gap-3">
-            <button onclick="location.reload()" class="px-5 border border-[#8A9A5B] rounded uppercase text-xs font-black text-[#8A9A5B] hover:bg-[#8A9A5B] hover:text-[#0f1108] transition-colors">Reset</button>
-            <button onclick="openMaps()" class="flex-1 bg-[#8A9A5B] text-[#0f1108] py-5 font-black uppercase text-lg rounded shadow-2xl active:translate-y-2 transition-all border-b-4 border-[#5d6837]">
-                AVVIA NAVIGATORE
-            </button>
-        </div>
+    <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-lg h-[72px] backdrop-blur-xl border rounded-[36px] flex items-center justify-between p-2 shadow-[0_8px_24px_rgba(0,0,0,0.6)] z-40" style="background-color: var(--glass-bg); border-color: rgba(255,255,255,0.05);">
+        <button onclick="location.reload()" class="h-full px-6 rounded-[28px] btn-error-outlined font-bold uppercase text-xs tracking-wider">
+            Reset
+        </button>
+        <button onclick="openMaps()" class="h-full flex-1 ml-3 btn-tonal rounded-[28px] font-bold uppercase text-sm tracking-widest flex items-center justify-center gap-2">
+            Naviga <span class="text-lg leading-none">↗</span>
+        </button>
     </nav>
 
     <script>
-        // Lista JUNK potenziata massicciamente con i termini delle tue tabelle
+        // La lista JUNK e le costanti rimangono invariate
         const JUNK_WORDS = "RICHIEDENTE|DESCRIZIONE|EFFETTUATA|PROBLEMI|MONITOR|TASTIERA|SPEDITO|LENOVO|PORTATILE|UPS|TNT|MB2|C-920|STU-520|ZT611|SNC|TICKET|PLOTTER|PRT|MPS|AE221|ASUS|CONTABANCONOTE|PC|DESKTOP|BATTERIA|SOSTITUZIONE|GUASTO|RITIRO|CONSEGNA|APPUNTAMENTO|TELEFONO|CELLULARE|CLIENTE|REFERENTE|PIANO|SCALA|INTERNO|CITOFONO|ATTENZIONE|URGENTE|DIFETTO|ALIMENTATORE|CAVO|MOUSE|RAM|SCHEDA|MADRE|VIDEO|HARD|DISK|SSD|INSTALLAZIONE|CONFIGURAZIONE|STAMPANTE|TONER|RIFORNIMENTO|MULETTO|SPORTELLO|POSTAZIONE|UFFICIO|MAGAZZINO|REPARTO|DIRIGENTE|RESPONSABILE|ASSISTENZA|TECNICO|INTERVENTO|GARANZIA|S30|GBR|FIELD|CENTRO-NORD|POLO|ISSUE|WLAN|PAPER|JAM|SENSOR|SEPARATOR|PICK|ASSY|KIT|SERVICE|STATION|INKS|ADF|GSO|REDI|WIFI|INCH|SN|DW|POSTE|GENERICO|BREVE|ACCENDE|NON|SI|RIMANE|NERO|COLLEGAMENTO|DIFETTOSO|WKO|C1\\.1|NOK|IL|SU|PULIZIA|CAMBIO|INCHIOSTRO|MESSAGGIO|ERRORE|BOURRAGE|COGNOME|LUCA|ELEFONO|RICHIEDE|RIPARAZIONE|DELLA|ALEX|DUMITRU|TEL|INFO|INFORTECHSRLS|COM|BICI";
 
         const CONFIG = {
@@ -110,15 +150,15 @@
             }
         };
 
+        // Protocollo Eraser invariato
         function processSentinel(rawText) {
             const hasSavigno = /SAVIGNO|SAVIGN/i.test(rawText);
             const hasPoste = /POSTE|PT[0-9]|TICKET|CONTABANCONOTE/i.test(rawText);
 
-            // 1. Pre-Piallatura
             let flatText = rawText
                 .replace(/[\n\r|\[\]_]/g, ' ') 
                 .toUpperCase()
-                .replace(/TNT\s+B[O0]/g, ' ') // Disinnesco bomba colonna sinistra
+                .replace(/TNT\s+B[O0]/g, ' ') 
                 .replace(/PORTA\s+B[O0]\s*LOGNA/g, 'PORTA BOLOGNA')
                 .replace(/\bB[0O]\b/g, 'BO') 
                 .replace(/\bF E\b/g, 'FE')
@@ -128,25 +168,22 @@
                 .replace(/(\d{5})([A-Z]{2})\b/g, '$1 $2')
                 .replace(/\s+/g, ' ');
 
-            // 2. Divisione dei Blocchi
             const startWords = /(?=\b(?:PIAZZALE|PIAZZA|VIA|CORSO|VIALE|STRADA|V\.LE|P\.ZZA|P\.ZA|C\.SO|P\.LE|PZ\.ZA|LUNGOMARE|VICOLO|BORGO|LOC\.|LOCALIT[AÀ]|FRAZ\.|FRAZIONE)\b)/;
             let chunks = flatText.split(startWords);
 
             let addresses = [];
             const junkRegex = new RegExp(`\\b(${JUNK_WORDS})\\b`, 'gi');
             
-            // Il cuore dell'Eraser: individua i seriali per CANCELLARLI, non per tagliare
             const serialsRegex = /\b(?:PT\d{5,}|41\d{5,}|WS\d{5,}|CN[A-Z0-9]{4,}|M\d{3,}[A-Z]+|P\d{4,}[A-Z]+|T\d{4,})\b/gi;
             const provRegex = /\b(BO|FE|MO|RE|RA|FC|PR|RN|PC)\b/g;
 
             chunks.forEach(chunk => {
                 if (!/^(PIAZZALE|PIAZZA|VIA|CORSO|VIALE|STRADA|V\.LE|P\.ZZA|P\.ZA|C\.SO|P\.LE|PZ\.ZA|LUNGOMARE|VICOLO|BORGO|LOC\.|LOCALIT[AÀ]|FRAZ\.|FRAZIONE)\b/.test(chunk)) return;
 
-                // 3. Purificazione (Erase)
                 let cleanChunk = chunk
-                    .replace(junkRegex, ' ') // Rimuove il testo descrittivo
-                    .replace(serialsRegex, ' ') // Svuota i seriali dei ticket, permettendo ai frammenti di città di unirsi
-                    .replace(/\b\d{6,}\b/g, ' ') // Svuota altri numeri lunghi casuali
+                    .replace(junkRegex, ' ') 
+                    .replace(serialsRegex, ' ') 
+                    .replace(/\b\d{6,}\b/g, ' ') 
                     .replace(/\s+/g, ' ')
                     .trim();
 
@@ -154,22 +191,18 @@
                 let matches = [...cleanChunk.matchAll(provRegex)];
                 
                 if (matches.length > 0) {
-                    // Trova la prima provincia e aggiunge un "elastico" di 30 caratteri 
-                    // per catturare pezzi di città slittati (es. FE / FINALE)
                     let provEnd = matches[0].index + matches[0][0].length;
                     cutIndex = Math.min(provEnd + 30, cleanChunk.length);
                 }
 
                 let finalExtraction = "";
                 
-                // 4. Taglio Soft
                 if (cutIndex !== -1) {
                     finalExtraction = cleanChunk.substring(0, cutIndex);
                 } else {
                     finalExtraction = cleanChunk.substring(0, 80);
                 }
 
-                // 5. Lucidatura Finale
                 let polishedAddr = finalExtraction
                     .replace(/[^A-Z0-9\s/.,'-]/g, '') 
                     .replace(/\s+/g, ' ') 
@@ -195,36 +228,57 @@
             renderUI(hasPoste, hasSavigno);
         }
 
+        // Render UI Aggiornato a MD3
         function renderUI(alertPoste, alertSavigno) {
             const list = document.getElementById('address-list');
             document.getElementById('results-area').classList.remove('hidden');
             list.innerHTML = '';
 
-            if(alertSavigno) list.innerHTML += `<div class="p-3 bg-yellow-600/20 border-l-4 border-yellow-500 text-xs font-black text-left mb-2 uppercase text-yellow-500 tracking-widest">! PRIORITÀ: RITIRO SAVIGNO !</div>`;
-            if(alertPoste) list.innerHTML += `<div class="p-3 bg-red-900/40 border-l-4 border-red-500 text-xs font-black text-left mb-4 uppercase text-red-400 tracking-widest">! PRIORITÀ: MAGAZZINO MEDICINA !</div>`;
+            // Card Avvisi MD3
+            if(alertSavigno) list.innerHTML += `<div class="p-4 bg-yellow-900/30 border border-yellow-600/50 rounded-[16px] text-xs font-bold uppercase text-yellow-500 tracking-widest shadow-sm mb-4">⚠️ PRIORITÀ: RITIRO SAVIGNO</div>`;
+            if(alertPoste) list.innerHTML += `<div class="p-4 bg-red-900/30 border border-red-800/50 rounded-[16px] text-xs font-bold uppercase text-red-400 tracking-widest shadow-sm mb-4">⚠️ PRIORITÀ: MAGAZZINO MEDICINA</div>`;
 
             route.forEach((addr, i) => {
                 const isBase = (i === 0 || i === route.length - 1);
                 const isSpecial = [CONFIG.COLOMBO, CONFIG.MEDICINA, CONFIG.SAVIGNO].includes(addr);
                 
+                let bgClass = "bg-[var(--md-sys-color-surface-container)]";
+                let outlineClass = "border border-transparent";
+                let labelColor = "color: var(--md-sys-color-primary);";
+                let badgeText = `TARGET 0${i}`;
+
+                if (i === 0) badgeText = 'START HQ';
+                if (i === route.length - 1) badgeText = 'END HQ';
+
+                if (isBase) {
+                    bgClass = "bg-[var(--md-sys-color-surface)]";
+                    outlineClass = "border border-white/10";
+                    labelColor = "color: var(--md-sys-color-outline);";
+                } else if (isSpecial) {
+                    bgClass = "bg-[var(--md-sys-color-primary-container)]";
+                    labelColor = "color: var(--md-sys-color-on-surface);";
+                }
+                
                 const card = document.createElement('div');
-                card.className = `target-card ${isBase ? 'base-node' : ''} ${isSpecial ? 'highlight' : ''}`;
+                card.className = `relative p-5 rounded-[24px] mb-3 ${bgClass} ${outlineClass} shadow-sm`;
                 
                 card.innerHTML = `
-                    <div class="pr-14">
-                        <div class="text-[10px] font-black opacity-50 uppercase tracking-[0.3em] mb-1 text-[#8A9A5B]">
-                            ${i === 0 ? 'START HQ' : (i === route.length-1 ? 'END HQ' : 'TARGET ' + i)}
+                    <div class="pr-12">
+                        <div class="text-[10px] font-black uppercase tracking-[0.2em] mb-2 mono-text opacity-80" style="${labelColor}">
+                            ${badgeText}
                         </div>
-                        <div class="text-[16px] font-bold uppercase leading-snug text-white editable-addr" 
+                        <div class="text-[15px] font-semibold uppercase leading-snug editable-addr" 
                              ${!isBase && !isSpecial ? 'contenteditable="true"' : ''} 
                              data-index="${i}"
                              onblur="updateRoute(${i}, this.innerText)"
-                             style="word-break: break-word;">
+                             style="word-break: break-word; color: var(--md-sys-color-on-surface);">
                             ${addr}
                         </div>
                     </div>
                     ${!isBase ? `
-                        <button onclick="removeTappa(${i})" class="absolute top-1/2 right-4 -translate-y-1/2 text-red-500 font-black text-4xl opacity-70 hover:opacity-100 p-2 leading-none transition-opacity">×</button>
+                        <button onclick="removeTappa(${i})" class="absolute top-1/2 right-3 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center text-red-400 bg-red-900/20 hover:bg-red-900/40 transition-colors text-2xl font-light pb-1">
+                            ×
+                        </button>
                     ` : ''}
                 `;
                 list.appendChild(card);
@@ -246,6 +300,7 @@
             window.open(`https://www.google.it/maps/dir/${stops}`, '_blank');
         }
 
+        // Esportazione PDF Invariata
         function generatePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -253,7 +308,7 @@
             doc.setFillColor(15, 17, 8); 
             doc.rect(0, 0, 210, 297, 'F');
             
-            doc.setTextColor(138, 154, 91);
+            doc.setTextColor(163, 184, 108); // Adattato al nuovo verde primario
             doc.setFont("courier", "bolditalic");
             doc.setFontSize(26);
             doc.text("PATHFINDER", 105, 20, null, null, "center");
@@ -263,7 +318,7 @@
             doc.setTextColor(200, 200, 200);
             doc.text(`DATA MISSIONE: ${new Date().toLocaleDateString('it-IT')}`, 105, 28, null, null, "center");
             
-            doc.setDrawColor(138, 154, 91);
+            doc.setDrawColor(163, 184, 108);
             doc.line(20, 34, 190, 34);
 
             let yPos = 45;
@@ -280,7 +335,7 @@
                 
                 doc.setFont("courier", "bold");
                 doc.setFontSize(9);
-                doc.setTextColor(138, 154, 91);
+                doc.setTextColor(163, 184, 108);
                 const label = i === 0 ? '[START HQ]' : (i === route.length-1 ? '[END HQ]' : `[TARGET 0${i}]`);
                 doc.text(label, 20, yPos);
                 
