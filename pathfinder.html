@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pathfinder Sentinel v24.0 - Enterprise Edition</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <title>Pathfinder Sentinel v25.0 - Enterprise PDF Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -77,13 +76,14 @@
 
     <div class="mb-8 mt-4 text-center">
         <h1 class="text-4xl font-black tracking-tighter uppercase drop-shadow-md" style="color: var(--md-sys-color-primary);">Pathfinder</h1>
-        <div class="mono-text text-[11px] font-bold opacity-70 tracking-[0.4em] mt-1" style="color: var(--md-sys-color-outline);">V24.0 - HYBRID ENGINE</div>
+        <div class="mono-text text-[11px] font-bold opacity-70 tracking-[0.4em] mt-1" style="color: var(--md-sys-color-outline);">V25.0 - PDF NATIVE ENGINE</div>
     </div>
 
     <div class="mb-8 w-full max-w-lg mx-auto">
-        <input type="file" id="file-input" accept="image/*, application/pdf" class="hidden">
-        <button onclick="document.getElementById('file-input').click()" class="w-full btn-tonal py-5 rounded-[28px] font-bold text-lg uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.4)]">
-            ⚡ Carica Dati (IMG/PDF)
+        <input type="file" id="file-input" accept="application/pdf" class="hidden">
+        <button onclick="document.getElementById('file-input').click()" class="w-full btn-tonal py-5 rounded-[28px] font-bold text-lg uppercase tracking-widest shadow-[0_4px_14px_rgba(0,0,0,0.4)] flex flex-col items-center justify-center gap-1">
+            <span>⚡ Carica Foglio Lavoro</span>
+            <span class="text-[10px] font-normal tracking-[0.2em] opacity-80">(SOLO FILE PDF)</span>
         </button>
     </div>
 
@@ -92,7 +92,7 @@
             <div class="loader rounded-full border-4 border-slate-700 h-16 w-16 mb-6"></div>
             <div id="loading-text" class="text-sm font-black uppercase animate-pulse tracking-widest text-center">
                 Elaborazione...<br>
-                <span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">ANALISI MOTORE IBRIDO</span>
+                <span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">ESTRAZIONE NATIVA IN CORSO</span>
             </div>
         </div>
     </div>
@@ -101,7 +101,7 @@
         <div class="flex justify-between items-center mb-6 px-2">
             <div class="text-[11px] font-medium opacity-70 uppercase tracking-wider">Tap sul testo per correggere</div>
             <button onclick="generatePDF()" class="btn-outlined px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-2">
-                <span class="text-lg leading-none">↓</span> PDF
+                <span class="text-lg leading-none">↓</span> EXPORT PDF
             </button>
         </div>
         <div id="address-list" class="space-y-4"></div>
@@ -117,10 +117,9 @@
     </nav>
 
     <script>
-        // Motore PDF.js Worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 
-        // JUNK_WORDS espanso con i nuovi termini del PDF e della Dark Table
+        // Libreria parole e configurazione rimasta invariata
         const JUNK_WORDS = "RICHIEDENTE|DESCRIZIONE|EFFETTUATA|PROBLEMI|MONITOR|TASTIERA|SPEDITO|LENOVO|PORTATILE|UPS|TNT|MB2|C-920|STU-520|ZT611|SNC|TICKET|PLOTTER|PRT|MPS|AE221|ASUS|CONTABANCONOTE|PC|DESKTOP|BATTERIA|SOSTITUZIONE|GUASTO|RITIRO|CONSEGNA|APPUNTAMENTO|TELEFONO|CELLULARE|CLIENTE|REFERENTE|PIANO|SCALA|INTERNO|CITOFONO|ATTENZIONE|URGENTE|DIFETTO|ALIMENTATORE|CAVO|MOUSE|RAM|SCHEDA|MADRE|VIDEO|HARD|DISK|SSD|INSTALLAZIONE|CONFIGURAZIONE|STAMPANTE|TONER|RIFORNIMENTO|MULETTO|SPORTELLO|POSTAZIONE|UFFICIO|MAGAZZINO|REPARTO|DIRIGENTE|RESPONSABILE|ASSISTENZA|TECNICO|INTERVENTO|GARANZIA|S30|GBR|FIELD|CENTRO-NORD|POLO|ISSUE|WLAN|PAPER|JAM|SENSOR|SEPARATOR|PICK|ASSY|KIT|SERVICE|STATION|INKS|ADF|GSO|REDI|WIFI|INCH|SN|DW|POSTE|GENERICO|BREVE|ACCENDE|NON|SI|RIMANE|NERO|COLLEGAMENTO|DIFETTOSO|WKO|C1\\.1|NOK|IL|SU|PULIZIA|CAMBIO|INCHIOSTRO|MESSAGGIO|ERRORE|BOURRAGE|COGNOME|LUCA|ELEFONO|RICHIEDE|RIPARAZIONE|DELLA|ALEX|DUMITRU|TEL|INFO|INFORTECHSRLS|COM|BICI|ADJ|ST-150F|ELITEBOOK|WWAN|RTK|KBD|COVER|W/KB|EMEA|FREEZE";
 
         const CONFIG = {
@@ -134,86 +133,44 @@
 
         document.getElementById('file-input').onchange = async (e) => {
             const file = e.target.files[0];
-            if (!file) return;
+            if (!file || file.type !== 'application/pdf') {
+                alert("Formato non valido. Per favore carica esclusivamente un file PDF.");
+                return;
+            }
             
             const overlay = document.getElementById('loading-overlay');
-            const loadingText = document.getElementById('loading-text');
             overlay.classList.remove('hidden');
             
             try {
-                // RAMIFICAZIONE 1: Estrazione Nativa PDF (Lettura perfetta, 0 errori ottici)
-                if (file.type === 'application/pdf') {
-                    loadingText.innerHTML = `Elaborazione...<br><span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">ESTRAZIONE PDF NATIVA</span>`;
-                    
-                    const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                    let fullText = '';
-                    
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        // Unisce gli elementi del PDF aggiungendo spazi per non incollare le parole
-                        const pageText = textContent.items.map(item => item.str).join(' ');
-                        fullText += pageText + ' \n';
-                    }
-                    processSentinel(fullText);
-                } 
-                // RAMIFICAZIONE 2: Estrazione Immagine con Filtro per Dark Mode
-                else if (file.type.startsWith('image/')) {
-                    loadingText.innerHTML = `Elaborazione...<br><span class="text-[10px] opacity-70 mono-text mt-2 block" style="color: var(--md-sys-color-primary);">OCR CON FILTRO DARK MODE</span>`;
-                    
-                    const img = new Image();
-                    img.src = URL.createObjectURL(file);
-                    await new Promise(res => img.onload = res);
-                    
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width; 
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    
-                    ctx.fillStyle = "white";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    
-                    // Inversione Colori (Trasforma Dark Mode in Light Mode per aiutare l'OCR)
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const data = imageData.data;
-                    for (let i = 0; i < data.length; i += 4) {
-                        let r = 255 - data[i];     
-                        let g = 255 - data[i + 1]; 
-                        let b = 255 - data[i + 2]; 
-                        
-                        // Binarizzazione ad alto contrasto
-                        let avg = (r + g + b) / 3;
-                        let threshold = avg > 140 ? 255 : 0; 
-                        
-                        data[i] = data[i+1] = data[i+2] = threshold;
-                    }
-                    ctx.putImageData(imageData, 0, 0);
-
-                    const worker = await Tesseract.createWorker('ita', 1, { logger: () => {} });
-                    const { data: { text } } = await worker.recognize(canvas); // OCR sul canvas processato
-                    await worker.terminate();
-                    
-                    processSentinel(text);
-                } else {
-                    alert("Formato file non supportato. Usa PDF o Immagini.");
-                    overlay.classList.add('hidden');
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+                
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + ' \n';
                 }
+                
+                processSentinel(fullText);
+                
             } catch (err) {
                 console.error(err);
-                alert("Anomalia nel motore di estrazione.");
+                alert("Errore irreversibile nella lettura del PDF.");
+            } finally {
                 overlay.classList.add('hidden');
-            } 
+            }
         };
 
-        // Protocollo Eraser
+        // Protocollo Eraser V2 - Chirurgia per PDF CSV-like
         function processSentinel(rawText) {
             const hasSavigno = /SAVIGNO|SAVIGN/i.test(rawText);
             const hasPoste = /POSTE|PT[0-9]|TICKET|CONTABANCONOTE/i.test(rawText);
 
+            // Appiattimento e rimozione separatori tipici delle tabelle PDF
             let flatText = rawText
-                .replace(/[\n\r|\[\]_]/g, ' ') 
+                .replace(/[\n\r|\[\]_"]/g, ' ') 
                 .toUpperCase()
                 .replace(/TNT\s+B[O0]/g, ' ') 
                 .replace(/PORTA\s+B[O0]\s*LOGNA/g, 'PORTA BOLOGNA')
@@ -231,7 +188,6 @@
             let addresses = [];
             const junkRegex = new RegExp(`\\b(${JUNK_WORDS})\\b`, 'gi');
             
-            // RegEx potenziato per assorbire i lunghi seriali visti nel PDF
             const serialsRegex = /\b(?:PT\d{5,}|41\d{5,}|WS\d{5,}|CN[A-Z0-9]{4,}|M\d{3,}[A-Z]+|P\d{4,}[A-Z]+|T\d{4,}|1Z[0-9A-Z]{10,}|5CD[0-9A-Z]{6,})\b/gi;
             const provRegex = /\b(BO|FE|MO|RE|RA|FC|PR|RN|PC)\b/g;
 
@@ -249,8 +205,8 @@
                 let matches = [...cleanChunk.matchAll(provRegex)];
                 
                 if (matches.length > 0) {
-                    let provEnd = matches[0].index + matches[0][0].length;
-                    cutIndex = Math.min(provEnd + 30, cleanChunk.length);
+                    // Taglio netto ed esatto alla fine della sigla della provincia
+                    cutIndex = matches[0].index + matches[0][0].length;
                 }
 
                 let finalExtraction = "";
@@ -261,8 +217,9 @@
                     finalExtraction = cleanChunk.substring(0, 80);
                 }
 
+                // Eliminazione chirurgica di virgole e caratteri spuri per un indirizzo perfetto
                 let polishedAddr = finalExtraction
-                    .replace(/[^A-Z0-9\s/.,'-]/g, '') 
+                    .replace(/[^A-Z0-9\s/.'-]/g, ' ') 
                     .replace(/\s+/g, ' ') 
                     .replace(/^[.,'\-\s]+|[.,'\-\s]+$/g, '') 
                     .trim();
@@ -283,10 +240,10 @@
             [...new Set(addresses)].forEach(a => route.push(a));
             route.push(CONFIG.HOME);
             
-            document.getElementById('loading-overlay').classList.add('hidden');
             renderUI(hasPoste, hasSavigno);
         }
 
+        // Render dell'interfaccia Enterprise
         function renderUI(alertPoste, alertSavigno) {
             const list = document.getElementById('address-list');
             document.getElementById('results-area').classList.remove('hidden');
@@ -357,16 +314,14 @@
             window.open(`https://www.google.it/maps/dir/${stops}`, '_blank');
         }
 
-        // Generazione PDF Aggiornata al tema Enterprise (Slate/Tech Blue)
+        // Esportazione PDF
         function generatePDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Sfondo Slate 900
             doc.setFillColor(15, 23, 42); 
             doc.rect(0, 0, 210, 297, 'F');
             
-            // Titolo Blue 500
             doc.setTextColor(59, 130, 246); 
             doc.setFont("helvetica", "bold");
             doc.setFontSize(26);
@@ -374,7 +329,7 @@
             
             doc.setFont("helvetica", "normal");
             doc.setFontSize(10);
-            doc.setTextColor(148, 163, 184); // Slate 400
+            doc.setTextColor(148, 163, 184); 
             doc.text(`DATA MISSIONE: ${new Date().toLocaleDateString('it-IT')}`, 105, 28, null, null, "center");
             
             doc.setDrawColor(59, 130, 246);
@@ -400,7 +355,7 @@
                 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(12);
-                doc.setTextColor(248, 250, 252); // Slate 50 (Bianco ghiaccio)
+                doc.setTextColor(248, 250, 252); 
                 
                 const splitAddr = doc.splitTextToSize(addr, 150);
                 doc.text(splitAddr, 45, yPos);
@@ -408,7 +363,7 @@
                 yPos += (splitAddr.length * 6) + 7;
                 
                 if (!isBase) {
-                    doc.setDrawColor(51, 65, 85); // Slate 700
+                    doc.setDrawColor(51, 65, 85); 
                     doc.line(20, yPos - 3, 190, yPos - 3);
                 }
             });
