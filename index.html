@@ -25,67 +25,130 @@
       background-color: var(--camo-bg);
       color: var(--camo-text);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow: hidden; /* Evita lo scroll dell'intera pagina, delega lo scroll agli iframe */
+      overflow: hidden; /* Evita lo scroll della pagina principale */
     }
 
     .app-hub-container {
       width: 100%;
-      height: 100vh;
+      /* Usiamo dvh per evitare i tagli su schermi mobile */
+      height: 100dvh; 
       display: flex;
       flex-direction: column;
+      position: relative;
     }
 
-    .tabs {
-      display: flex;
-      width: 100%;
+    /* --- MENU FLUTTUANTE E SIDEBAR --- */
+    
+    .menu-toggle {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 100;
       background-color: var(--camo-dark);
-      flex-shrink: 0;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-      z-index: 10;
+      color: var(--camo-text);
+      border: 2px solid var(--camo-accent);
+      border-radius: 6px;
+      padding: 10px 15px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+      transition: background-color 0.3s;
     }
 
+    .menu-toggle:hover {
+      background-color: var(--camo-tab);
+    }
+
+    .sidebar-menu {
+      position: absolute;
+      top: 0;
+      left: -260px; /* Nascosto fuori dallo schermo */
+      width: 260px;
+      height: 100%;
+      background-color: var(--camo-dark);
+      box-shadow: 4px 0 10px rgba(0, 0, 0, 0.6);
+      z-index: 200;
+      transition: left 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      padding-top: 70px;
+    }
+
+    .sidebar-menu.open {
+      left: 0; /* Entra nello schermo */
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: var(--camo-text);
+      font-size: 30px;
+      cursor: pointer;
+    }
+
+    /* Modifica ai bottoni delle Tab per la visualizzazione verticale */
     .tab-btn {
-      flex: 1;
-      background-color: inherit;
+      background-color: transparent;
       color: var(--camo-text);
       border: none;
       outline: none;
       cursor: pointer;
-      padding: 18px 10px;
-      font-size: 15px;
+      padding: 20px;
+      font-size: 16px;
       font-weight: bold;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      transition: background-color 0.2s ease;
-      text-align: center;
-      user-select: none; 
-      -webkit-tap-highlight-color: transparent;
+      text-align: left;
+      border-left: 5px solid transparent;
+      transition: all 0.2s ease;
     }
 
-    .tab-btn:active {
+    .tab-btn:hover {
       background-color: var(--camo-tab);
     }
 
     .tab-btn.active {
       background-color: var(--camo-active);
       color: #ffffff;
-      border-bottom: 4px solid var(--camo-accent);
+      border-left: 5px solid var(--camo-accent);
     }
+
+    /* Sfondo scuro semitrasparente quando il menù è aperto */
+    .menu-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 150;
+    }
+
+    .menu-overlay.active {
+      display: block;
+    }
+
+    /* --- CONTENUTO IFRAME --- */
 
     .app-content {
       display: none;
-      flex-grow: 1;
       width: 100%;
+      height: 100%;
       background-color: var(--camo-bg);
     }
 
     .app-content.active {
-      display: flex; /* Flex permette all'iframe di espandersi completamente */
+      display: block; /* Ora riempie tutto l'hub container */
     }
 
     .app-iframe {
       width: 100%;
-      flex-grow: 1;
+      height: 100%; /* L'iframe si prende tutto lo spazio liberato dal menù fisso */
       border: none;
       display: block;
     }
@@ -94,7 +157,13 @@
 <body>
 
   <div class="app-hub-container">
-    <div class="tabs">
+    
+    <button class="menu-toggle" onclick="toggleMenu()">☰ MENU</button>
+
+    <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+
+    <div class="sidebar-menu" id="sidebar-menu">
+      <button class="close-btn" onclick="toggleMenu()">&times;</button>
       <button class="tab-btn active" onclick="switchApp(event, 'pathfinder-app')">Pathfinder</button>
       <button class="tab-btn" onclick="switchApp(event, 'firma-app')">Firma PDF</button>
     </div>
@@ -106,25 +175,32 @@
     <div id="firma-app" class="app-content">
       <iframe src="firma.html" class="app-iframe" title="Applicativo Firma PDF"></iframe>
     </div>
+    
   </div>
 
   <script>
+    // Apre e chiude la sidebar e l'overlay
+    function toggleMenu() {
+      document.getElementById("sidebar-menu").classList.toggle("open");
+      document.getElementById("menu-overlay").classList.toggle("active");
+    }
+
     function switchApp(evt, appName) {
-      // Nasconde tutte le app
       let contents = document.getElementsByClassName("app-content");
       for (let i = 0; i < contents.length; i++) {
         contents[i].classList.remove("active");
       }
 
-      // Rimuove lo stato attivo dai pulsanti
       let btns = document.getElementsByClassName("tab-btn");
       for (let i = 0; i < btns.length; i++) {
         btns[i].classList.remove("active");
       }
 
-      // Mostra l'app selezionata e illumina la tab
       document.getElementById(appName).classList.add("active");
       evt.currentTarget.classList.add("active");
+
+      // Chiude il menù automaticamente dopo aver fatto click
+      toggleMenu();
     }
   </script>
 
